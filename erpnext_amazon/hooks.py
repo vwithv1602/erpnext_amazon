@@ -11,6 +11,7 @@ app_color = "#3498db"
 app_email = "vavcoders@gmail.com"
 app_license = "license.txt"
 
+fixtures = ["Custom Field"]
 # Includes in <head>
 # ------------------
 
