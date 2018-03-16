@@ -9,7 +9,7 @@ import frappe
 from .sync_customers import create_customer,create_customer_address,create_customer_contact
 from frappe.utils import flt, nowdate, cint
 from .amazon_item_common_functions import get_oldest_serial_number
-# from .amazon_requests import get_request, get_filtering_condition
+from .amazon_requests import get_request
 from vlog import vwrite
 
 from parse_erpnext_connector.parse_orders import parse_order
@@ -28,46 +28,9 @@ def sync_orders():
     sync_amazon_orders()
 def get_amazon_orders(ignore_filter_conditions=False):
     amazon_orders = []
-    vwrite("Call amazon api instead of this sample order")
-    amazon_orders = [
-        {
-        "order_id": "76996265",
-        "user_id": "11028919",
-        "is_parent_order": "N",
-        "exempt_from_billing": "0",
-        "parent_order_id": "0",
-        "company_id": "1",
-        "timestamp": "1448879008",
-        "firstname": "Lokesh",
-        "lastname": "Singh",
-        "email": "lokesh.mnit@gmail.com",
-        "status": "E",
-        "total": "34.00",
-        "subtotal": "10.00",
-        "details": "Delivery Region: Delhi NCR \n",
-        "net_payout": None,
-        "payment_id": "6",
-        "s_city": "Gurgaon",
-        "s_state": "HR",
-        "s_zipcode": "122001",
-        "label_printed": "n",
-        "gift_it": "N",
-        "items_list": [
-            {
-            "product": "Product-Test-Crestech-4",
-            "product_id": "78363196",
-            "amount": "1",
-            "selling_price": "10.00",
-            "image_path": "cdn.amazon.com/images/thumbnails/18875/160/160/imagetest1433145582.jpg"
-            }
-        ]
-        }
-    ]
-    # params = {'CreateTimeFrom': startTime, 'CreateTimeTo': endTime, 'OrderStatus': 'Completed'}
-    # orders = get_request('GetOrders', 'trading', params)
-    # if orders.get("OrderArray"):
-    #     amazon_orders = orders.get("OrderArray").get("Order")
-    return amazon_orders
+    params = {}
+    amazon_orders = get_request('list_orders', params)
+    return amazon_orders.ListOrdersResult.Orders.Order
 def check_amazon_sync_flag_for_item(amazon_product_id):
     sync_flag = False
     sync_flag_query = """select sync_with_amazon from tabItem where amazon_product_id='%s' or amazon_product_id like '%s' or amazon_product_id like '%s' or amazon_product_id like '%s'""" % (amazon_product_id,amazon_product_id+",%","%,"+amazon_product_id+",%","%,"+amazon_product_id)
@@ -84,40 +47,51 @@ def check_amazon_sync_flag_for_item(amazon_product_id):
 def sync_amazon_orders():
     frappe.local.form_dict.count_dict["orders"] = 0
     get_amazon_orders_array = get_amazon_orders()
+    if not len((get_amazon_orders_array)):
+        return False
     for amazon_order in get_amazon_orders_array:
-        vwrite(amazon_order)
-        parsed_order = parse_order("amazon",amazon_order)
+        amazon_order_with_item_details = []
+        # call api for items by sending amazon_order.AmazonOrderId
+        params = {'AmazonOrderId':amazon_order.AmazonOrderId}
+        list_order_items = get_request('list_order_items', params)
+        amazon_order_with_item_details.append(amazon_order)
+        amazon_order_with_item_details.append(list_order_items)
+        parsed_order = parse_order("amazon",amazon_order_with_item_details)
+        vwrite('parsed_order')
         vwrite(parsed_order)
-        amazon_item_id = parsed_order.get("item_details").get("item_id")
-        is_item_in_sync = check_amazon_sync_flag_for_item(amazon_item_id)
-        if(is_item_in_sync):
-            if valid_customer_and_product(parsed_order):
-                try:
-                    create_order(parsed_order, amazon_settings)
-                    frappe.local.form_dict.count_dict["orders"] += 1
+        if parsed_order:
+            amazon_item_id = parsed_order.get("item_details").get("item_id")
+            is_item_in_sync = check_amazon_sync_flag_for_item(amazon_item_id)
+            if(is_item_in_sync):
+                if valid_customer_and_product(parsed_order):
+                    try:
+                        create_order(parsed_order, amazon_settings)
+                        frappe.local.form_dict.count_dict["orders"] += 1
 
-                except AmazonError, e:
-                    vwrite("AmazonError raised in create_order")
-                    vwrite(amazon_order)
-                    make_amazon_log(status="Error", method="sync_amazon_orders", message=frappe.get_traceback(),
-                                     request_data=amazon_order.get("OrderID"), exception=True)
-                except Exception, e:
-                    vwrite("Exception raised in create_order")
-                    vwrite(e)
-                    vwrite(parsed_order)
-                    if e.args and e.args[0]:
-                        raise e
-                    else:
-                        make_amazon_log(title=e.message, status="Error", method="sync_amazon_orders",
-                                         message=frappe.get_traceback(),
-                                         request_data=amazon_order.get("OrderID"), exception=True)
+                    except AmazonError, e:
+                        vwrite("AmazonError raised in create_order")
+                        vwrite(amazon_order)
+                        make_amazon_log(status="Error", method="sync_amazon_orders", message=frappe.get_traceback(),
+                                        request_data=amazon_order.get("OrderID"), exception=True)
+                    except Exception, e:
+                        vwrite("Exception raised in create_order")
+                        vwrite(e)
+                        vwrite(parsed_order)
+                        if e.args and e.args[0]:
+                            raise e
+                        else:
+                            make_amazon_log(title=e.message, status="Error", method="sync_amazon_orders",
+                                            message=frappe.get_traceback(),
+                                            request_data=amazon_order.get("OrderID"), exception=True)
+                else:
+                    vwrite("Not valid customer and product")
             else:
-                vwrite("Not valid customer and product")
+                vwrite("Item not in sync: %s" % amazon_order.get("TransactionArray").get("Transaction")[0].get("Item").get("Title"))
+                make_amazon_log(title="%s" % amazon_order.get("TransactionArray").get("Transaction")[0].get("Item").get("Title"), status="Error", method="sync_amazon_orders",
+                                request_data=amazon_order.get("OrderID"),message="Sales order item is not in sync with erp. Sales Order: %s " % amazon_order.get(
+                                    "OrderID"))
         else:
-            vwrite("Item not in sync: %s" % amazon_order.get("TransactionArray").get("Transaction")[0].get("Item").get("Title"))
-            make_amazon_log(title="%s" % amazon_order.get("TransactionArray").get("Transaction")[0].get("Item").get("Title"), status="Error", method="sync_amazon_orders",
-                             request_data=amazon_order.get("OrderID"),message="Sales order item is not in sync with erp. Sales Order: %s " % amazon_order.get(
-                                 "OrderID"))
+            vwrite("Parsing failed")
 
 def valid_customer_and_product(parsed_order):
     amazon_order = None
@@ -172,11 +146,11 @@ def create_sales_order(parsed_order, amazon_settings, company=None):
                 "customer": frappe.db.get_value("Customer",
                                                 {"amazon_customer_id": parsed_order.get("customer_details").get("buyer_id")}, "name"),
                 "delivery_date": delivery_date,
-                "transaction_date": parsed_order.get("order_details").get("order_date"),
+                "transaction_date": parsed_order.get("order_details").get("order_date")[:10],
                 "company": amazon_settings.company,
                 "selling_price_list": amazon_settings.price_list,
                 "ignore_pricing_rule": 1,
-                "items": get_order_items(parsed_order.get("item_details").get("all_items"), amazon_settings),
+                "items": get_order_items(parsed_order.get("item_details").get("all_items"), amazon_settings),                
                 "item_serial_no": serial_number
                 # "taxes": get_order_taxes(amazon_order.get("TransactionArray").get("Transaction"), amazon_settings),
                 # "apply_discount_on": "Grand Total",
@@ -244,9 +218,9 @@ def get_order_items(order_items, amazon_settings):
                               message="Item not found for %s" %(amazon_item.get("Item").get("ItemID")),request_data=amazon_item.get("Item").get("ItemID"))
         items.append({
             "item_code": item_code,
-            "item_name": amazon_item.get("product"),
-            "rate": amazon_item.get("selling_price"),
-            "qty": amazon_item.get("amount"),
+            "item_name": amazon_item.Title,
+            "rate": float(amazon_item.ItemPrice) + float(amazon_item.ItemTax),
+            "qty": amazon_item.QuantityShipped,
             # "stock_uom": amazon_item.get("sku"),
             "warehouse": amazon_settings.warehouse
         })
@@ -257,7 +231,7 @@ def get_item_code(amazon_item):
     item_code = False
     if not item_code:
         # item_code = frappe.db.get_value("Item", {"amazon_product_id": amazon_item.get("Item").get("ItemID")}, "item_code")
-        item_id = amazon_item.get("product_id")
+        item_id = amazon_item.ASIN
         item_code_query = """ select item_code from `tabItem` where amazon_product_id='%s' or amazon_product_id like '%s' or amazon_product_id like '%s' or amazon_product_id like '%s'""" % (item_id,item_id+",%","%,"+item_id+",%","%,"+item_id)
         item_code_result = frappe.db.sql(item_code_query, as_dict=1)
         if len(item_code_result)>1:
