@@ -57,14 +57,14 @@ def create_customer_address(parsed_order, amazon_customer):
 					  request_data=parsed_order.get("customer_details").get("buyer_email"), exception=True)
 	else:
 		try:
-			# if amazon_order.get("ShippingAddress").get("Street1"):
-			# 	address_line1 = amazon_order.get("ShippingAddress").get("Street1").replace("'", "")
-			# else:
-			# 	address_line1 = amazon_order.get("ShippingAddress").get("Street1")
-			# if amazon_order.get("ShippingAddress").get("Street2"):
-			# 	address_line2 = amazon_order.get("ShippingAddress").get("Street2").replace("'", "")
-			# else:
-			# 	address_line2 = amazon_order.get("ShippingAddress").get("Street2")
+			if parsed_order.get("customer_details").get("buyer_address_line1"):
+				address_line1 = parsed_order.get("customer_details").get("buyer_address_line1").replace("'", "")
+			else:
+				address_line1 = 'NA'
+			if parsed_order.get("customer_details").get("buyer_address_line2"):
+				address_line2 = parsed_order.get("customer_details").get("buyer_address_line2").replace("'", "")
+			else:
+				address_line2 = 'NA'
 			if not frappe.db.get_value("Address",
 									   {"amazon_address_id": parsed_order.get("customer_details").get("buyer_email")}, "name"):
 				frappe.get_doc({
@@ -72,14 +72,14 @@ def create_customer_address(parsed_order, amazon_customer):
 					"amazon_address_id": parsed_order.get("customer_details").get("buyer_email"),
 					"address_title": parsed_order.get("customer_details").get("buyer_name"),
 					"address_type": "Shipping",
-					# "address_line1": address_line1,
-					# "address_line2": address_line2,
+					"address_line1": address_line1,
+					"address_line2": address_line2,
 					"city": parsed_order.get("customer_details").get("buyer_city"),
 					"state": parsed_order.get("customer_details").get("buyer_state"),
 					"pincode": parsed_order.get("customer_details").get("buyer_zipcode"),
 					# "country": amazon_order.get("ShippingAddress").get("Country"),
 					"country": None,
-					"phone": "NA",
+					"phone": parsed_order.get("customer_details").get("buyer_phone"),
 					"email_id": parsed_order.get("customer_details").get("buyer_email"),
 					"links": [{
 						"link_doctype": "Customer",
@@ -90,12 +90,12 @@ def create_customer_address(parsed_order, amazon_customer):
 			else:
 				frappe.db.sql(
 					"""update tabAddress set address_title='%s',address_type='Shipping',address_line1='%s',address_line2='%s',city='%s',state='%s',pincode='%s',country='%s',phone='%s',email_id='%s' where amazon_address_id='%s' """
-					% (parsed_order.get("customer_details").get("buyer_name"), None,
-					   None,
+					% (parsed_order.get("customer_details").get("buyer_name"), parsed_order.get("customer_details").get("buyer_address_line1"),
+					   parsed_order.get("customer_details").get("buyer_address_line2"),
 					   parsed_order.get("customer_details").get("buyer_city"),
 					   parsed_order.get("customer_details").get("buyer_state"), parsed_order.get("customer_details").get("buyer_zipcode"),
 					   "India",
-					   "NA",
+					   parsed_order.get("customer_details").get("buyer_phone"),
 					   parsed_order.get("customer_details").get("buyer_email"),
 					   parsed_order.get("customer_details").get("buyer_email")))
 				frappe.db.commit()
