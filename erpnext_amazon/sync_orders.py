@@ -57,8 +57,6 @@ def sync_amazon_orders():
         amazon_order_with_item_details.append(amazon_order)
         amazon_order_with_item_details.append(list_order_items)
         parsed_order = parse_order("amazon",amazon_order_with_item_details)
-        vwrite('parsed_order')
-        vwrite(parsed_order)
         if parsed_order:
             amazon_item_id = parsed_order.get("item_details").get("item_id")
             is_item_in_sync = check_amazon_sync_flag_for_item(amazon_item_id)
@@ -132,11 +130,14 @@ def create_sales_order(parsed_order, amazon_settings, company=None):
         # get oldest serial number and update in tabSales Order
         serial_number = get_oldest_serial_number(parsed_order.get("item_details").get("item_id")) # sending amazon_product_id
         try:
-            # if parsed_order.get("CheckoutStatus").get("PaymentMethod")=='COD':
-            #     is_cod = True
-            # else:
-            #     is_cod = False
-            is_cod = False # yet to find the parameter for amazon
+            if parsed_order.get("order_details").get("payment_method")=='COD':
+                is_cod = True
+            else:
+                is_cod = False
+            if 'fulfillment_channel' in parsed_order.get("order_details"):
+                fulfillment_channel = parsed_order.get("order_details").get("fulfillment_channel")
+            else:
+                fulfillment_channel = ""
             so = frappe.get_doc({
                 "doctype": "Sales Order",
                 "naming_series": amazon_settings.sales_order_series or "SO-Amazon-",
@@ -151,19 +152,23 @@ def create_sales_order(parsed_order, amazon_settings, company=None):
                 "selling_price_list": amazon_settings.price_list,
                 "ignore_pricing_rule": 1,
                 "items": get_order_items(parsed_order.get("item_details").get("all_items"), amazon_settings),                
-                "item_serial_no": serial_number
+                "item_serial_no": serial_number,
+                "fulfillment_channel": fulfillment_channel
                 # "taxes": get_order_taxes(amazon_order.get("TransactionArray").get("Transaction"), amazon_settings),
                 # "apply_discount_on": "Grand Total",
                 # "discount_amount": get_discounted_amount(amazon_order),
             })
-            
             if company:
                 so.update({
                     "company": company,
                     "status": "Draft"
                 })
             so.flags.ignore_mandatory = True
-            so.save(ignore_permissions=True)
+            try:
+                so.save(ignore_permissions=True)
+            except Exception, e:
+                vwrite("in exception")
+                vwrite(e)
             return False
             if(parsed_order.get("order_details").get("parent_order_id") != 0):
                 # variation_details = get_variation_details(amazon_order.get("TransactionArray").get("Transaction")[0])
