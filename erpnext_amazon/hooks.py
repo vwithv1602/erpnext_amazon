@@ -90,7 +90,11 @@ fixtures = ["Custom Field"]
 
 # Scheduled Tasks
 # ---------------
-
+scheduler_events = {
+	"hourly": [
+		"erpnext_amazon.api.sync_amazon"
+	]
+}
 # scheduler_events = {
 # 	"all": [
 # 		"erpnext_amazon.tasks.all"
