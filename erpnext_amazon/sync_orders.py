@@ -223,9 +223,9 @@ def get_order_items(order_items, amazon_settings):
                               message="Item not found for %s" %(amazon_item.get("Item").get("ItemID")),request_data=amazon_item.get("Item").get("ItemID"))
         items.append({
             "item_code": item_code,
-            "item_name": amazon_item.Title,
-            "rate": float(amazon_item.ItemPrice)/float(amazon_item.QuantityShipped) + float(amazon_item.ItemTax),
-            "qty": amazon_item.QuantityShipped,
+            "item_name": amazon_item.Title[:140],
+            "rate": float(amazon_item.ItemPrice)/float(amazon_item.QuantityOrdered) + float(amazon_item.ItemTax),
+            "qty": amazon_item.QuantityOrdered,
             # "stock_uom": amazon_item.get("sku"),
             "warehouse": amazon_settings.warehouse
         })
