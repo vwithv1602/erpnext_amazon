@@ -138,6 +138,10 @@ def create_sales_order(parsed_order, amazon_settings, company=None):
                 fulfillment_channel = parsed_order.get("order_details").get("fulfillment_channel")
             else:
                 fulfillment_channel = ""
+            if parsed_order.get("order_details").get("is_amazon_replacement")=='true':
+                is_amazon_replacement = True
+            else:
+                is_amazon_replacement = False
             so = frappe.get_doc({
                 "doctype": "Sales Order",
                 "naming_series": amazon_settings.sales_order_series or "SO-Amazon-",
@@ -153,7 +157,8 @@ def create_sales_order(parsed_order, amazon_settings, company=None):
                 "ignore_pricing_rule": 1,
                 "items": get_order_items(parsed_order.get("item_details").get("all_items"), amazon_settings),                
                 "item_serial_no": serial_number,
-                "fulfillment_channel": fulfillment_channel
+                "fulfillment_channel": fulfillment_channel,
+                "is_amazon_replacement":is_amazon_replacement
                 # "taxes": get_order_taxes(amazon_order.get("TransactionArray").get("Transaction"), amazon_settings),
                 # "apply_discount_on": "Grand Total",
                 # "discount_amount": get_discounted_amount(amazon_order),
