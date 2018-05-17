@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 import frappe
 from frappe import _
-from .sync_orders import sync_orders
+from .sync_orders import sync_orders,sync_amazon_qty
 from .utils import disable_amazon_sync_on_exception, make_amazon_log
 from frappe.utils.background_jobs import enqueue
 from datetime import datetime,timedelta
@@ -25,6 +25,9 @@ def sync_amazon_resources():
             frappe.local.form_dict.count_dict = {}
             # sync_products(amazon_settings.price_list, amazon_settings.warehouse)
             sync_orders()
+            vwrite(" >> sync_amazon_qty")
+            # sync_amazon_qty()
+            vwrite(" << sync_amazon_qty")
             frappe.db.set_value("Amazon Settings", None, "last_sync_datetime", now_time)
 
             make_amazon_log(title="Sync Completed", status="Success", method=frappe.local.form_dict.cmd,

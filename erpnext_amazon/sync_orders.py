@@ -5,7 +5,7 @@ from frappe import _
 from .exceptions import AmazonError
 from .utils import make_amazon_log
 import frappe
-# from .sync_products import make_item
+from .sync_products import update_qty_in_amazon_site
 from .sync_customers import create_customer,create_customer_address,create_customer_contact
 from frappe.utils import flt, nowdate, cint
 from .amazon_item_common_functions import get_oldest_serial_number
@@ -90,7 +90,46 @@ def sync_amazon_orders():
                                     "OrderID"))
         else:
             vwrite("Parsing failed")
+            make_amazon_log(title="%s" % amazon_order.AmazonOrderId, status="Error", method="sync_amazon_orders",
+                                request_data=amazon_order,message="Parsing failed for Sales Order: %s " % amazon_order.AmazonOrderId)
+def sync_amazon_qty():
+    # items_sql = """ select * from tabItem where sync_with_amazon='1' and sync_qty_with_amazon='1' and item_code='Refurbished Lenovo Thinkpad T410 Core I5 2 GB 320 GB Black' """
+    items_sql = """ select distinct item_code,amazon_product_id,variant_of from tabItem where sync_with_amazon='1' and sync_qty_with_amazon='1' and has_variants='0' """
+    items_res = frappe.db.sql(items_sql, as_dict=1)
+    update_data = []
+    for amazon_item in items_res:
+        item_code = amazon_item.get("item_code")
+        if not amazon_item.get("variant_of"): # for non-variant items
+            qty_to_be_updated = get_balance_qty_in_erp(item_code)
+            if amazon_item.get("amazon_product_id"):
+                for amazon_product_id in amazon_item.get("amazon_product_id").split(','):
+                    if qty_to_be_updated<0:
+                        qty_to_be_updated = 0
+                    update_data.append({'amazon_product_id':amazon_product_id,'qty_to_be_updated':qty_to_be_updated})
+                    # update_qty_in_amazon_site(amazon_product_id,qty_to_be_updated)
+        else: # for variant items
+            qty_to_be_updated = get_balance_qty_in_erp_for_variant_item(item_code)
+    update_qty_in_amazon_site(update_data)
 
+
+def get_balance_qty_in_erp(item_code):
+    stock_sql = """ select sum(actual_qty) as bal_qty from `tabStock Ledger Entry` where warehouse='%s' and item_code='%s' """ %  (amazon_settings.warehouse,item_code)
+    stock_res = frappe.db.sql(stock_sql, as_dict=1)
+    if stock_res[0] and stock_res[0].get("bal_qty"):
+        bal_qty = stock_res[0].get("bal_qty")
+    else:
+        bal_qty = 0
+    so_submitted_sql = """ select sum(soi.qty) as so_submitted_qty from `tabSales Order` so inner join `tabSales Order Item` soi on soi.parent = so.name where soi.item_code='%s' and so.status not in ('Draft','Closed','Cancelled','Completed') """ % item_code
+    so_submitted_res = frappe.db.sql(so_submitted_sql, as_dict=1)
+    if so_submitted_res[0] and so_submitted_res[0].get("so_submitted_qty"):
+        so_submitted_count = so_submitted_res[0].get("so_submitted_qty")
+    else:
+        so_submitted_count = 0
+    actual_qty = bal_qty - so_submitted_count
+    return actual_qty
+def get_balance_qty_in_erp_for_variant_item(item_code):
+    # vwrite("variant Item logic for %s" % item_code)
+    return True
 def valid_customer_and_product(parsed_order):
     amazon_order = None
     customer_id = parsed_order.get("customer_details").get("buyer_id")

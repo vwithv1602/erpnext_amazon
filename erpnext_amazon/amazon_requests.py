@@ -13,11 +13,19 @@ def get_request(path,params):
     lastSyncObj = datetime.strptime(lastSyncString, '%Y-%m-%d %H:%M:%S')
     lastSync = (lastSyncObj + timedelta(-1)).isoformat()
     orders_response = None
+    response = None
     conn = MWSConnection(
     host=settings.host,
     aws_access_key_id=settings.access_key_id,
     aws_secret_access_key=settings.secret_access_key,
     Merchant=settings.merchant_id)
+    if path == 'get_matching_product':
+        try:
+            response = conn.get_matching_product(MarketplaceId=settings.market_place_id,ASINList=[params.get("ASIN")])
+        except Exception as e:
+            vwrite("Exception raised in get_request - get_product_categories_for_asin")
+            vwrite(e)
+            vwrite(e.message)
     if path == 'list_orders':
         try:
             response = conn.list_orders(CreatedAfter=lastSync,MarketplaceId=[settings.market_place_id])
@@ -30,6 +38,39 @@ def get_request(path,params):
             response = conn.list_order_items(CreatedAfter=lastSync,MarketplaceId=[settings.market_place_id],AmazonOrderId=params.get("AmazonOrderId"))
         except Exception as e:
             vwrite("Exception raised in get_request - list_order_items")
+            vwrite(e)
+            vwrite(e.message)
+    if path == 'submit_feed':
+        try:
+            feed = conn.submit_feed(
+                FeedType = params.get("feed_type"),
+                PurgeAndReplace = False,
+                MarketplaceIdList = [settings.market_place_id],
+                content_type = 'text/xml',
+                FeedContent = params.get("feed_content")
+            )
+            response = feed.SubmitFeedResult.FeedSubmissionInfo
+        except Exception as e:
+            vwrite("Exception raised in get_request - submit_feed")
+            vwrite(params)
+            vwrite(e)
+            vwrite(e.message)
+    if path == 'get_feed_submission_list':
+        try: 
+            response = conn.get_feed_submission_list(
+                FeedSubmissionIdList=[params.get('feed_submission_id')]
+            )
+        except Exception as e:
+            vwrite("Exception raised in get_request - get_feed_submission_list")
+            vwrite(params)
+            vwrite(e)
+            vwrite(e.message)
+    if path == 'get_feed_submission_result':
+        try:
+            response = conn.get_feed_submission_result(FeedSubmissionId=params.get("id"))
+        except Exception as e:
+            vwrite("Exception raised in get_request - get_feed_submission_result")
+            vwrite(params)
             vwrite(e)
             vwrite(e.message)
     return response

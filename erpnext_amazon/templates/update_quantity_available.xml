@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<AmazonEnvelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="amznenvelope.xsd">
+    <Header>
+        <DocumentVersion>1.01</DocumentVersion>
+        <MerchantIdentifier>Fizzics_India</MerchantIdentifier>
+    </Header>
+    <MessageType>Inventory</MessageType>
+    {% for message in FeedMessages %}
+    <Message>
+        <MessageID>{{ loop.index }}</MessageID>
+        <OperationType>Update</OperationType>
+        <Inventory>
+        <SKU>{{ message.SKU }}</SKU>
+        <Quantity>{{ message.Quantity }}</Quantity>
+        <FulfillmentLatency>{{ message.FulfillmentLatency }}</FulfillmentLatency>
+        </Inventory>
+    </Message>
+    {% endfor %}
+</AmazonEnvelope>
