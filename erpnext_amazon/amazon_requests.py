@@ -19,6 +19,13 @@ def get_request(path,params):
     aws_access_key_id=settings.access_key_id,
     aws_secret_access_key=settings.secret_access_key,
     Merchant=settings.merchant_id)
+    if path == 'list_inventory_supply':
+        try:
+            response = conn.list_inventory_supply(SellerSkus=[params.get("SellerSkus")])
+        except Exception as e:
+            vwrite("Exception raised in get_request - get_product_categories_for_asin")
+            vwrite(e)
+            vwrite(e.message)
     if path == 'get_matching_product':
         try:
             response = conn.get_matching_product(MarketplaceId=settings.market_place_id,ASINList=[params.get("ASIN")])

@@ -5,7 +5,7 @@ from frappe import _
 from .exceptions import AmazonError
 from .utils import make_amazon_log
 import frappe
-from .sync_products import update_qty_in_amazon_site
+from .sync_products import update_qty_in_amazon_site,get_sku_of_item
 from .sync_customers import create_customer,create_customer_address,create_customer_contact
 from frappe.utils import flt, nowdate, cint
 from .amazon_item_common_functions import get_oldest_serial_number
@@ -105,13 +105,25 @@ def sync_amazon_qty():
                 for amazon_product_id in amazon_item.get("amazon_product_id").split(','):
                     if qty_to_be_updated<0:
                         qty_to_be_updated = 0
-                    update_data.append({'amazon_product_id':amazon_product_id,'qty_to_be_updated':qty_to_be_updated})
+                    is_MFN = is_fulfillment_by_merchant(amazon_product_id)
+                    if is_MFN:
+                        update_data.append({'amazon_product_id':amazon_product_id,'qty_to_be_updated':qty_to_be_updated})
                     # update_qty_in_amazon_site(amazon_product_id,qty_to_be_updated)
         else: # for variant items
             qty_to_be_updated = get_balance_qty_in_erp_for_variant_item(item_code)
     update_qty_in_amazon_site(update_data)
 
-
+def is_fulfillment_by_merchant(amazon_product_id):
+    sku = get_sku_of_item(amazon_product_id)
+    params = {'SellerSkus':get_sku_of_item(amazon_product_id)}
+    item_info = get_request('list_inventory_supply',params)
+    try:
+        FBA = None
+        FBA = item_info.ListInventorySupplyResult.InventorySupplyList[0].ASIN
+        if FBA:
+            return False
+    except Exception, e:
+        return True
 def get_balance_qty_in_erp(item_code):
     stock_sql = """ select sum(actual_qty) as bal_qty from `tabStock Ledger Entry` where warehouse='%s' and item_code='%s' """ %  (amazon_settings.warehouse,item_code)
     stock_res = frappe.db.sql(stock_sql, as_dict=1)
