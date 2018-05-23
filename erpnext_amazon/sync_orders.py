@@ -125,7 +125,7 @@ def is_fulfillment_by_merchant(amazon_product_id):
     except Exception, e:
         return True
 def get_balance_qty_in_erp(item_code):
-    stock_sql = """ select sum(actual_qty) as bal_qty from `tabStock Ledger Entry` where warehouse='%s' and item_code='%s' """ %  (amazon_settings.warehouse,item_code)
+    stock_sql = """ select sum(actual_qty) as bal_qty from `tabStock Ledger Entry` where warehouse like '%s' and item_code='%s' """ %  (amazon_settings.warehouse[:-6]+'%',item_code)
     stock_res = frappe.db.sql(stock_sql, as_dict=1)
     if stock_res[0] and stock_res[0].get("bal_qty"):
         bal_qty = stock_res[0].get("bal_qty")
