@@ -25,9 +25,7 @@ def sync_amazon_resources():
             frappe.local.form_dict.count_dict = {}
             # sync_products(amazon_settings.price_list, amazon_settings.warehouse)
             sync_orders()
-            vwrite(" >> sync_amazon_qty")
             sync_amazon_qty()
-            vwrite(" << sync_amazon_qty")
             frappe.db.set_value("Amazon Settings", None, "last_sync_datetime", now_time)
 
             make_amazon_log(title="Sync Completed", status="Success", method=frappe.local.form_dict.cmd,

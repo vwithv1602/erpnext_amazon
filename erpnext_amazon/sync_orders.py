@@ -84,10 +84,8 @@ def sync_amazon_orders():
                 else:
                     vwrite("Not valid customer and product")
             else:
-                vwrite("Item not in sync: %s" % amazon_order.get("TransactionArray").get("Transaction")[0].get("Item").get("Title"))
-                make_amazon_log(title="%s" % amazon_order.get("TransactionArray").get("Transaction")[0].get("Item").get("Title"), status="Error", method="sync_amazon_orders",
-                                request_data=amazon_order.get("OrderID"),message="Sales order item is not in sync with erp. Sales Order: %s " % amazon_order.get(
-                                    "OrderID"))
+                vwrite("Item not in sync: %s" % amazon_item_id)
+                make_amazon_log(title="%s" % amazon_item_id, status="Error", method="sync_amazon_orders", request_data=amazon_order.get("OrderID"),message="Sales order item is not in sync with erp. Sales Order: %s " % amazon_order.get("OrderID"))
         else:
             vwrite("Parsing failed")
             make_amazon_log(title="%s" % amazon_order.AmazonOrderId, status="Error", method="sync_amazon_orders",
