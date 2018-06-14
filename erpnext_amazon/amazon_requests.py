@@ -80,6 +80,30 @@ def get_request(path,params):
             vwrite(params)
             vwrite(e)
             vwrite(e.message)
+    if path == 'request_report':
+        try:
+            response = conn.request_report(ReportType=params.get("ReportType"))
+        except Exception as e:
+            vwrite("Exception raised in get_request - request_report")
+            vwrite(params)
+            vwrite(e)
+            vwrite(e.message)
+    if path == 'get_report_request_list':
+        try:
+            response = conn.get_report_request_list(ReportRequestIdList=params.get("ReportRequestIdList"))
+        except Exception as e:
+            vwrite("Exception raised in get_request - get_report_request_list")
+            vwrite(params)
+            vwrite(e)
+            vwrite(e.message)
+    if path == 'get_report':
+        try:
+            response = conn.get_report(ReportId=params.get("ReportId"))
+        except Exception as e:
+            vwrite("Exception raised in get_request - get_report")
+            vwrite(params)
+            vwrite(e)
+            vwrite(e.message)
     return response
 
 def get_amazon_settings():
