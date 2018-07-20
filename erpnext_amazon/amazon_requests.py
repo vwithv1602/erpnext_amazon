@@ -35,7 +35,7 @@ def get_request(path,params):
             vwrite(e.message)
     if path == 'list_orders':
         try:
-            response = conn.list_orders(CreatedAfter=lastSync,MarketplaceId=[settings.market_place_id])
+            response = conn.list_orders(LastUpdatedAfter=lastSync,MarketplaceId=[settings.market_place_id])
         except Exception as e:
             vwrite("Exception raised in get_request - list_orders")
             vwrite(e)
