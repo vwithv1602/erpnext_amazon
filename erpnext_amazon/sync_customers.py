@@ -67,7 +67,7 @@ def create_customer_address(parsed_order, amazon_customer):
 				address_line2 = 'NA'
 			if not frappe.db.get_value("Address",
 									   {"amazon_address_id": parsed_order.get("customer_details").get("buyer_email")}, "name"):
-				frappe.get_doc({
+				addr = frappe.get_doc({
 					"doctype": "Address",
 					"amazon_address_id": parsed_order.get("customer_details").get("buyer_email"),
 					"address_title": parsed_order.get("customer_details").get("buyer_name"),
@@ -81,12 +81,26 @@ def create_customer_address(parsed_order, amazon_customer):
 					"country": None,
 					"phone": parsed_order.get("customer_details").get("buyer_phone"),
 					"email_id": parsed_order.get("customer_details").get("buyer_email"),
+					#"links": [{
+						#"link_doctype": "Customer",
+						## "link_name": amazon_order.get("BuyerUserID")
+						#"link_name": parsed_order.get("customer_details").get("buyer_name")
+					#}]
+				}).insert()
+				customer_address = frappe.db.sql(""" select name from tabCustomer where amazon_customer_id='%s' """ % parsed_order.get("customer_details").get("buyer_email"),as_dict=1)
+				addr.update({
 					"links": [{
 						"link_doctype": "Customer",
 						# "link_name": amazon_order.get("BuyerUserID")
-						"link_name": parsed_order.get("customer_details").get("buyer_name")
+						"link_name": customer_address[0].get("name")
 					}]
-				}).insert()
+				})
+				addr.flags.ignore_mandatory = True
+				try:
+					addr.save(ignore_permissions=True)
+				except Exception, e:
+					vwrite("Exception raised in create_customer_address while saving link_name")
+					vwrite(e)
 			else:
 				frappe.db.sql(
 					"""update tabAddress set address_title='%s',address_type='Shipping',address_line1='%s',address_line2='%s',city='%s',state='%s',pincode='%s',country='%s',phone='%s',email_id='%s' where amazon_address_id='%s' """

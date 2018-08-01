@@ -212,6 +212,10 @@ def create_sales_order(parsed_order, amazon_settings, company=None):
                 # "apply_discount_on": "Grand Total",
                 # "discount_amount": get_discounted_amount(amazon_order),
             })
+            customer_address = frappe.db.sql(""" select name from tabAddress where email_id='%s' """ % parsed_order.get("customer_details").get("buyer_email"),as_dict=1)
+            so.update({
+                "customer_address":customer_address[0].get("name")
+            })
             if "Certified Refurbished" in so.__dict__.get("items")[0].__dict__.get("item_name"):
                 so.update({
                     "mail_to_amazon_buyer":1
