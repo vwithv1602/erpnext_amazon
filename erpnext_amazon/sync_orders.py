@@ -88,7 +88,8 @@ def sync_amazon_orders():
                 make_amazon_log(title="%s" % amazon_item_id, status="Error", method="sync_amazon_orders", request_data=amazon_order.get("OrderID"),message="Sales order item is not in sync with erp. Sales Order: %s " % amazon_order.get("OrderID"))
         else:
             vwrite("Parsing failed")
-            make_amazon_log(title="%s" % amazon_order.AmazonOrderId, status="Error", method="sync_amazon_orders",
+            if amazon_order_with_item_details[0].OrderStatus != 'Canceled' or amazon_order_with_item_details[0].OrderStatus != 'Pending':
+                make_amazon_log(title="%s" % amazon_order.AmazonOrderId, status="Error", method="sync_amazon_orders",
                                 request_data=amazon_order,message="Parsing failed for Sales Order: %s " % amazon_order.AmazonOrderId)
 def sync_amazon_qty():
     # items_sql = """ select * from tabItem where sync_with_amazon='1' and sync_qty_with_amazon='1' and item_code='Refurbished Lenovo Thinkpad T410 Core I5 2 GB 320 GB Black' """
