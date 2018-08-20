@@ -87,8 +87,8 @@ def sync_amazon_orders():
                 vwrite("Item not in sync: %s" % amazon_item_id)
                 make_amazon_log(title="%s" % amazon_item_id, status="Error", method="sync_amazon_orders", request_data=amazon_order.get("OrderID"),message="Sales order item is not in sync with erp. Sales Order: %s " % amazon_order.get("OrderID"))
         else:
-            vwrite("Parsing failed")
-            if amazon_order_with_item_details[0].OrderStatus != 'Canceled' or amazon_order_with_item_details[0].OrderStatus != 'Pending':
+            vwrite("Parsing failed for %s" % amazon_order.AmazonOrderId)
+            if amazon_order_with_item_details[0].OrderStatus != 'Canceled' and amazon_order_with_item_details[0].OrderStatus != 'Pending':
                 make_amazon_log(title="%s" % amazon_order.AmazonOrderId, status="Error", method="sync_amazon_orders",
                                 request_data=amazon_order,message="Parsing failed for Sales Order: %s " % amazon_order.AmazonOrderId)
 def sync_amazon_qty():
@@ -205,7 +205,7 @@ def create_sales_order(parsed_order, amazon_settings, company=None):
                 "company": amazon_settings.company,
                 "selling_price_list": amazon_settings.price_list,
                 "ignore_pricing_rule": 1,
-                "items": get_order_items(parsed_order.get("item_details").get("all_items"), amazon_settings),                
+                "items": get_order_items(parsed_order.get("item_details").get("all_items"), amazon_settings,parsed_order),                
                 "item_serial_no": serial_number,
                 "fulfillment_channel": fulfillment_channel,
                 "is_amazon_replacement":is_amazon_replacement
@@ -216,6 +216,9 @@ def create_sales_order(parsed_order, amazon_settings, company=None):
             customer_address = frappe.db.sql(""" select name from tabAddress where email_id='%s' """ % parsed_order.get("customer_details").get("buyer_email"),as_dict=1)
             so.update({
                 "customer_address":customer_address[0].get("name")
+            })
+            so.update({
+                "contact_mobile": parsed_order.get("customer_details").get("buyer_phone")
             })
             if "Certified Refurbished" in so.__dict__.get("items")[0].__dict__.get("item_name"):
                 so.update({
@@ -267,7 +270,7 @@ def get_variation_details(amazon_order_item):
         variation_details = variation_details + attr.get("Name") + ':' + attr.get("Value") + ' ; '
     return variation_details
 
-def get_order_items(order_items, amazon_settings):
+def get_order_items(order_items, amazon_settings, parsed_order):
     items = []
     for amazon_item in order_items:
         # if('Variation' in amazon_item):
@@ -287,7 +290,7 @@ def get_order_items(order_items, amazon_settings):
         items.append({
             "item_code": item_code,
             "item_name": amazon_item.Title[:140],
-            "rate": (float(amazon_item.ItemPrice) + float(amazon_item.ItemTax))/float(amazon_item.QuantityOrdered),
+            "rate": parsed_order.get("order_details").get("amount"),
             "qty": amazon_item.QuantityOrdered,
             # "stock_uom": amazon_item.get("sku"),
             "warehouse": amazon_settings.warehouse
