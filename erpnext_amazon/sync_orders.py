@@ -290,7 +290,7 @@ def get_order_items(order_items, amazon_settings, parsed_order):
         items.append({
             "item_code": item_code,
             "item_name": amazon_item.Title[:140],
-            "rate": parsed_order.get("order_details").get("amount"),
+            "rate": float(parsed_order.get("order_details").get("amount"))/float(amazon_item.QuantityOrdered),
             "qty": amazon_item.QuantityOrdered,
             # "stock_uom": amazon_item.get("sku"),
             "warehouse": amazon_settings.warehouse
