@@ -229,6 +229,16 @@ def create_sales_order(parsed_order, amazon_settings, company=None):
                     "company": company,
                     "status": "Draft"
                 })
+            item_code_for_company = get_order_items(parsed_order.get("item_details").get("all_items"), amazon_settings,parsed_order)
+            company_override = frappe.db.get_value("Item",{"item_code": item_code_for_company[0].get("item_code")}, "company")
+            if company_override:
+                so.update({
+                    "company": company_override
+                })
+                i=0
+                for item in so.__dict__.get("items"):
+                    so.__dict__.get("items")[i].__dict__["warehouse"] = "%s%s" %(so.__dict__.get("items")[i].__dict__.get("warehouse")[:-6]," - FZI")
+                    i = i + 1
             so.flags.ignore_mandatory = True
             try:
                 so.save(ignore_permissions=True)
@@ -287,10 +297,19 @@ def get_order_items(order_items, amazon_settings, parsed_order):
             if item_code == None:
                 make_amazon_log(title="Item not found", status="Error", method="get_order_items",
                               message="Item not found for %s" %(amazon_item.get("Item").get("ItemID")),request_data=amazon_item.get("Item").get("ItemID"))
+        try:
+            if not parsed_order.get("order_details").get("amount"):
+                rate = 0
+            else:
+                rate = float(parsed_order.get("order_details").get("amount"))/float(amazon_item.QuantityOrdered)
+        except Exception, e:
+            vwrite("Exception raised in get_order_items")
+            vwrite(parsed_order.get("order_details").get("amount"))
+            vwrite(amazon_item.QuantityOrdered)
         items.append({
             "item_code": item_code,
             "item_name": amazon_item.Title[:140],
-            "rate": float(parsed_order.get("order_details").get("amount"))/float(amazon_item.QuantityOrdered),
+            "rate": rate,
             "qty": amazon_item.QuantityOrdered,
             # "stock_uom": amazon_item.get("sku"),
             "warehouse": amazon_settings.warehouse
