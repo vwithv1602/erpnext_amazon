@@ -47,6 +47,7 @@ def check_amazon_sync_flag_for_item(amazon_product_id):
 def sync_amazon_orders():
     frappe.local.form_dict.count_dict["orders"] = 0
     get_amazon_orders_array = get_amazon_orders()
+    vwrite(len(get_amazon_orders_array))
     if not len((get_amazon_orders_array)):
         return False
     for amazon_order in get_amazon_orders_array:
@@ -57,6 +58,8 @@ def sync_amazon_orders():
         amazon_order_with_item_details.append(amazon_order)
         amazon_order_with_item_details.append(list_order_items)
         parsed_order = parse_order("amazon",amazon_order_with_item_details)
+	#if parsed_order.get("item_details").get("item_id")=='B07GCDW751':
+	    #parsed_order=None
         if parsed_order:
             amazon_item_id = parsed_order.get("item_details").get("item_id")
             is_item_in_sync = check_amazon_sync_flag_for_item(amazon_item_id)
@@ -84,7 +87,7 @@ def sync_amazon_orders():
                 else:
                     vwrite("Not valid customer and product")
             else:
-                vwrite("Item not in sync: %s" % amazon_item_id)
+                vwrite("Item not in sync: %s for order: %s" % (amazon_item_id,amazon_order.get("OrderID")))
                 make_amazon_log(title="%s" % amazon_item_id, status="Error", method="sync_amazon_orders", request_data=amazon_order.get("OrderID"),message="Sales order item is not in sync with erp. Sales Order: %s " % amazon_order.get("OrderID"))
         else:
             vwrite("Parsing failed for %s" % amazon_order.AmazonOrderId)
@@ -237,7 +240,11 @@ def create_sales_order(parsed_order, amazon_settings, company=None):
                 })
                 i=0
                 for item in so.__dict__.get("items"):
-                    so.__dict__.get("items")[i].__dict__["warehouse"] = "%s%s" %(so.__dict__.get("items")[i].__dict__.get("warehouse")[:-6]," - FZI")
+		    if company_override=='Fizzics India':
+                        suffix = " - FZI"
+                    elif company_override=='Usedyetnew':
+                        suffix = " - Uyn"
+                    so.__dict__.get("items")[i].__dict__["warehouse"] = "%s%s" %(so.__dict__.get("items")[i].__dict__.get("warehouse")[:-6],suffix)
                     i = i + 1
             so.flags.ignore_mandatory = True
             try:
