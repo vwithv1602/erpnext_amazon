@@ -40,6 +40,13 @@ def get_request(path,params):
             vwrite("Exception raised in get_request - list_orders")
             vwrite(e)
             vwrite(e.message)
+    if path == 'list_canceled_orders':
+        try:
+            response = conn.list_orders(LastUpdatedAfter=lastSync,MarketplaceId=[settings.market_place_id],OrderStatus=[params.get('order_status')])
+        except Exception as e:
+            vwrite("Exception raised in get_request - list_orders")
+            vwrite(e)
+            vwrite(e.message)
     if path == 'list_order_items':
         try:
             response = conn.list_order_items(CreatedAfter=lastSync,MarketplaceId=[settings.market_place_id],AmazonOrderId=params.get("AmazonOrderId"))

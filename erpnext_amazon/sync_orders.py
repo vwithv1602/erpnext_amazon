@@ -26,6 +26,8 @@ endTime = datetime.now().isoformat()
 
 def sync_orders():
     sync_amazon_orders()
+    submit_amazon_canceled_orders()
+    
 def get_amazon_orders(ignore_filter_conditions=False):
     amazon_orders = []
     params = {}
@@ -44,6 +46,82 @@ def check_amazon_sync_flag_for_item(amazon_product_id):
         vwrite("Exception raised in check_amazon_sync_flag_for_item")
         vwrite(e)
     return sync_flag
+    
+###############################################################################
+# Functions for syncing amazon canceled orders with ERP.
+
+# Checking if the amazon order is in draft.
+def is_amazon_order_in_draft(amazon_order_id='171-5258387-4350709'):
+    """
+    Checks for a order ID is in draft or not
+    Input: String value of amazon order ID.
+    Output: Boolean value equals to True if the order is in draft
+    """
+    isdraft = False
+    try:
+        sales_order_status = frappe.db.get_value('Sales Order',{'amazon_order_id':amazon_order_id},'status')
+        if sales_order_status == 'Draft':
+            isdraft = True
+    except Exception, e:
+        vwrite("Exception in getting sales order details.")
+        vwrite(e)
+    return isdraft
+
+# List of all canceled order update after last syncing.
+def get_amazon_canceled_order():
+    """
+    Returns all the amazon canceled order using the mws api.
+    Output: List of orders that were canceled.
+    """
+    params = {'order_status':"Canceled"}
+    amazon_canceled_orders = get_request('list_canceled_orders',params)
+    vwrite(amazon_canceled_orders)
+    return amazon_canceled_orders.ListOrdersResult.Orders.Order
+
+# Get Sales order ID only for amazon orders.
+def get_sales_order_id(amazon_order_id):
+    """
+    Returns the order id specifically for amazon sales order
+    Input: Amazon order ID
+    Ouput: sales order ID
+    Error: In the vamazon logfiles(Location: sites/vamazon_{%date}.txt).
+    """
+    sales_order_id = None
+    try:
+        sales_order_id = frappe.db.get_value("Sales Order", {'amazon_order_id':amazon_order_id}, 'name')
+    except Exception, e:
+        vwrite("Exception in getting sales order ID.")
+        vwrite(e)
+    
+    return sales_order_id
+
+# If amazon canceled order in draft submit and close it.
+def submit_amazon_canceled_orders():
+    """
+    For each amazon order that are canceled,close them if they
+    are in draft.
+    Output: None
+    Error: Writes the vamazon file with traceback to the error.
+    """
+    sales_order_id = None
+    sales_order_doc = None
+    get_amazon_canceled_array = get_amazon_canceled_order()
+    vwrite(len(get_amazon_canceled_array))
+    if not len(get_amazon_canceled_array):
+        return False
+    for canceled_order in get_amazon_canceled_array:
+        is_draft = is_amazon_order_in_draft(canceled_order.AmazonOrderId)
+        if is_draft:
+            sales_order_id = get_sales_order_id(canceled_order.AmazonOrderId)
+            if sales_order_id:
+                sales_order_doc = frappe.get_doc('Sales Order',sales_order_id)
+                sales_order_doc.submit()
+                sales_order_doc.update_status('Closed')
+                vwrite(sales_order_id)
+
+                
+# End of functions for syncing the canceled order with ERP.
+###############################################################################
 def sync_amazon_orders():
     frappe.local.form_dict.count_dict["orders"] = 0
     get_amazon_orders_array = get_amazon_orders()
