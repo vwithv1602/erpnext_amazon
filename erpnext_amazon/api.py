@@ -5,6 +5,7 @@ from .sync_orders import sync_orders,sync_amazon_qty
 from .utils import disable_amazon_sync_on_exception, make_amazon_log
 from frappe.utils.background_jobs import enqueue
 from datetime import datetime,timedelta
+# For purpose of testing.
 from .vlog import vwrite
 
 @frappe.whitelist()
