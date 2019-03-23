@@ -122,10 +122,10 @@ def submit_amazon_canceled_orders():
                 
 # End of functions for syncing the canceled order with ERP.
 ###############################################################################
+
 def sync_amazon_orders():
     frappe.local.form_dict.count_dict["orders"] = 0
     get_amazon_orders_array = get_amazon_orders()
-    vwrite(len(get_amazon_orders_array))
     if not len((get_amazon_orders_array)):
         return False
     for amazon_order in get_amazon_orders_array:
@@ -136,8 +136,6 @@ def sync_amazon_orders():
         amazon_order_with_item_details.append(amazon_order)
         amazon_order_with_item_details.append(list_order_items)
         parsed_order = parse_order("amazon",amazon_order_with_item_details)
-	#if parsed_order.get("item_details").get("item_id")=='B07GCDW751':
-	    #parsed_order=None
         if parsed_order:
             amazon_item_id = parsed_order.get("item_details").get("item_id")
             is_item_in_sync = check_amazon_sync_flag_for_item(amazon_item_id)
