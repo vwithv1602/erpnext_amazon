@@ -19,9 +19,9 @@ class ItemAmazonReport(object):
 		"""return columns bab on filters"""
 		columns = [
 			_("Item Code") + ":Link/Item:120",
-			_("RTS Qty") + ":Data:120",
-			_("Amazon ERP Quantity") + ":Data:120",
-			_("Amazon Actual Quantity") + ":Data:120"
+			_("RTS Qty") + ":Float:120",
+			_("Amazon ERP Quantity") + ":Float:120",
+			_("Amazon Actual Quantity") + ":Float:120"
 		]
 		return columns
 	
