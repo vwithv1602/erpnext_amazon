@@ -62,7 +62,7 @@ class ItemAmazonReport(object):
 			amazon_actual_qty = self.get_amazon_count(item_code, item_code_mapping, amazon_asin_count_mapping)
 			if ((rts_qty + amazon_erp_qty + amazon_actual_qty) == 0) or (rts_qty == 0 and amazon_erp_qty == amazon_actual_qty):
 				continue
-			data.append([str(item_code),str(rts_qty),amazon_erp_qty,amazon_actual_qty])
+			data.append([str(item_code),int(rts_qty),amazon_erp_qty,amazon_actual_qty])
 		# return []
 		return data
 
