@@ -146,7 +146,7 @@ class ItemAmazonReport(object):
 				break
 		return result
 
-	def get_not_listing_reason(item_code):
+	def get_not_listing_reason(self,item_code):
 		item_reason = frappe.get_value("Item",item_code, "not_listing_reason")
 		if not item_reason:
 			return ""
