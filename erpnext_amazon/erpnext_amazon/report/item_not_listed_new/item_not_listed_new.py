@@ -63,7 +63,8 @@ class ItemAmazonReport(object):
 			amazon_actual_qty = self.get_amazon_count(item_code, item_code_mapping, amazon_asin_count_mapping)
 			if ((rts_qty + amazon_erp_qty + amazon_actual_qty) == 0) or (rts_qty == 0 and amazon_erp_qty == amazon_actual_qty):
 				continue
-			data.append([str(item_code),int(rts_qty),amazon_erp_qty,amazon_actual_qty,""])
+			item_not_listed_reason = self.get_not_listing_reason(item_code)
+			data.append([str(item_code),int(rts_qty),amazon_erp_qty,amazon_actual_qty,item_not_listed_reason])
 		# return []
 		return data
 
@@ -143,9 +144,14 @@ class ItemAmazonReport(object):
 			if i > 5:
 				#vwrite("Increment crossed 10")
 				break
-		print "amazon return result"
-		print result
 		return result
+
+	def get_not_listing_reason(item_code):
+		item_reason = frappe.get_value("Item",item_code, "not_listing_reason")
+		if not item_reason:
+			return ""
+		else:
+			return item_reason
 
 	def run(self, args):
 		columns = self.get_columns()
