@@ -65,7 +65,7 @@ class ItemAmazonReport(object):
 			amazon_actual_qty = self.get_amazon_count(item_code, item_code_mapping, amazon_asin_count_mapping)
 			if ((rts_qty + amazon_erp_qty + amazon_actual_qty) == 0) or (rts_qty == 0 and amazon_erp_qty == amazon_actual_qty):
 				continue
-			#item_not_listed_reason = self.get_not_listing_reason(item_code)
+			item_not_listed_reason = self.get_not_listing_reason(item_code)
 			data.append([str(item_code),asin,int(rts_qty),amazon_erp_qty,amazon_actual_qty,""])
 		# return []
 		return data
