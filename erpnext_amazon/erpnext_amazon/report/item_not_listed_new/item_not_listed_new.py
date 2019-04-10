@@ -19,6 +19,7 @@ class ItemAmazonReport(object):
 		"""return columns bab on filters"""
 		columns = [
 			_("Item Code") + ":Link/Item:120",
+			_("Amazon Product ID") + ":Data:120",
 			_("RTS Qty") + ":Float:120",
 			_("Amazon ERP Quantity") + ":Float:120",
 			_("Amazon Actual Quantity") + ":Float:120",
@@ -60,28 +61,23 @@ class ItemAmazonReport(object):
 						amazon_erp_qty = item_count_group_by_warehouse.get((item_code,warehouse))
 			
 			amazon_actual_qty = 0
+			asin = self.get_asin_from_erp(item_code)
 			amazon_actual_qty = self.get_amazon_count(item_code, item_code_mapping, amazon_asin_count_mapping)
 			if ((rts_qty + amazon_erp_qty + amazon_actual_qty) == 0) or (rts_qty == 0 and amazon_erp_qty == amazon_actual_qty):
 				continue
-			item_not_listed_reason = self.get_not_listing_reason(item_code)
-			data.append([str(item_code),int(rts_qty),amazon_erp_qty,amazon_actual_qty,item_not_listed_reason])
+			#item_not_listed_reason = self.get_not_listing_reason(item_code)
+			data.append([str(item_code),asin,int(rts_qty),amazon_erp_qty,amazon_actual_qty,""])
 		# return []
 		return data
 
 	def get_amazon_count(self, item_code, item_code_mapping, amazon_asin_count_mapping):
-		print "In get_amazon_count"
 		amazon_actual_qty = 0
 		if item_code in item_code_mapping:
-			print "In if"
 			asin_list_str = item_code_mapping.get(item_code)
 			asin_list = asin_list_str.split(',')
 			for asin in asin_list:
-				print "In for"
-				print amazon_asin_count_mapping
 				if asin in  amazon_asin_count_mapping:
-					print "In second if"
 					amazon_actual_qty += int(amazon_asin_count_mapping.get(asin))
-		print "returning amazon_actual_qty: %s" % amazon_actual_qty
 		return amazon_actual_qty
 
 	def get_warehouse(self):
@@ -91,6 +87,9 @@ class ItemAmazonReport(object):
 			warehouses.append(str(warhouse.get("name")).strip())
 		return warehouses
 
+	def get_asin_from_erp(self, item_code):
+		asin = frappe.get_value("Item", item_code,"amazon_product_id")
+		return asin
 
 	def get_items_counts_with_warehouse(self):
 		item_count_group_by_warehouse_query = """select i.item_code,sn.warehouse,count(sn.name) from `tabSerial No` sn inner join `tabItem` i on i.item_code=sn.item_code where sn.warehouse in (select name from `tabWarehouse` where parent_warehouse like "6. Ready to ship - Uyn") group by i.item_code,sn.warehouse;"""
@@ -130,11 +129,10 @@ class ItemAmazonReport(object):
 				reportResult = get_request('get_report',{'ReportId':generated_report_id})
 				res_array = re.split(r'\n+', reportResult)
 				i = 0
-				print "amazon res_array"
 				for line in res_array:
 					# if i > 0 and i < len(res_array)-1:
 					res_line = re.split(r'\t+', line)
-					result[res_line[2]] = res_line[9]
+					result[res_line[2]] = res_line[8]
 					amazon_prod_ids.append(res_line[1])
 				i = i+1
 				break
