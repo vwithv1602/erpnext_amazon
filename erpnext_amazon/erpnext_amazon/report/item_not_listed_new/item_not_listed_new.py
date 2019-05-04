@@ -128,7 +128,6 @@ class ItemAmazonReport(object):
 				generated_report_id = info.GeneratedReportId
 				reportResult = get_request('get_report',{'ReportId':generated_report_id})
 				res_array = re.split(r'\n+', reportResult)
-				vwrite(res_array)
 				i = 0
 				for line in res_array:
 					# if i > 0 and i < len(res_array)-1:
