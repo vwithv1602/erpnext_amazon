@@ -132,6 +132,7 @@ class ItemAmazonReport(object):
 				for line in res_array[1:]:
 					# if i > 0 and i < len(res_array)-1:
 					res_line = re.split(r'\t+', line)
+					#vwrite(res_line)
 					if res_line[3] == 'Unknown'or res_line[4] == 'Unknown':
 						continue
 					result[res_line[2]] = int(res_line[10]) + int(res_line[12])

@@ -132,6 +132,8 @@ def sync_amazon_orders():
         amazon_order_with_item_details = []
         # call api for items by sending amazon_order.AmazonOrderId
         params = {'AmazonOrderId':amazon_order.AmazonOrderId}
+        if frappe.get_list('Sales Order', filters = {'amazon_order_id':params.get('AmazonOrderId')},fields=['name']):
+            continue
         list_order_items = get_request('list_order_items', params)
         amazon_order_with_item_details.append(amazon_order)
         amazon_order_with_item_details.append(list_order_items)
