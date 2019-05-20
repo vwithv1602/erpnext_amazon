@@ -129,12 +129,10 @@ class ItemAmazonReport(object):
 				reportResult = get_request('get_report',{'ReportId':generated_report_id})
 				res_array = re.split(r'\n+', reportResult)
 				i = 0
-				for line in res_array[1:]:
+				for line in res_array:
 					# if i > 0 and i < len(res_array)-1:
 					res_line = re.split(r'\t+', line)
-					if res_line[3] == 'Unknown'or res_line[4] == 'Unknown':
-						continue
-					result[res_line[2]] = int(res_line[10]) + int(res_line[12])
+					result[res_line[2]] = res_line[8]
 					amazon_prod_ids.append(res_line[1])
 				i = i+1
 				break
