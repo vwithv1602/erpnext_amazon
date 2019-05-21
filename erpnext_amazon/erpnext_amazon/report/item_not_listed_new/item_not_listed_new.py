@@ -41,7 +41,9 @@ class ItemAmazonReport(object):
 		
 		# Distinct itemcodes.
 		item_codes = Set(item_codes)
-
+		item = 'Refurbished Dell Latitude E6430-INTEL CORE I5-4 GB-320 GB'
+		if item in item_codes:
+			print "it is there"
 		# Mapping item_code -> amazon product ID
 		item_code_mapping = self.get_item_code_mapping_to_asin()
 
@@ -78,6 +80,7 @@ class ItemAmazonReport(object):
 			for asin in asin_list:
 				if asin in  amazon_asin_count_mapping:
 					amazon_actual_qty += int(amazon_asin_count_mapping.get(asin))
+			print asin_list,amazon_actual_qty
 		return amazon_actual_qty
 
 	def get_warehouse(self):
@@ -102,7 +105,7 @@ class ItemAmazonReport(object):
 		item_code_mapping_query = '''select name,amazon_product_id from `tabItem` where amazon_product_id is not null and amazon_product_id != ""'''	
 		item_code_mapping = {}
 		for item in frappe.db.sql(item_code_mapping_query, as_dict=1):
-			item_code_mapping[str(item['name'])]	= str(item['amazon_product_id'])
+			item_code_mapping[str(item['name'])] = str(item['amazon_product_id'])
 
 		return item_code_mapping
 	
@@ -136,7 +139,7 @@ class ItemAmazonReport(object):
 					result[res_line[2]] = res_line[8]
 =======
 					#vwrite(res_line)
-					if res_line[3] == 'Unknown'or res_line[4] == 'Unknown':
+					if res_line[3] == 'Unknown' or res_line[4] == 'Unknown':
 						continue
 					result[res_line[2]] = int(res_line[10]) + int(res_line[12])
 >>>>>>> 73d44815708cf9c3c9593ecf64b6cdd82e37413b
