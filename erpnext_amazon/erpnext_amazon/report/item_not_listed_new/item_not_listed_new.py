@@ -41,9 +41,6 @@ class ItemAmazonReport(object):
 		
 		# Distinct itemcodes.
 		item_codes = Set(item_codes)
-		item = 'Refurbished Dell Latitude E6430-INTEL CORE I5-4 GB-320 GB'
-		if item in item_codes:
-			print "it is there"
 		# Mapping item_code -> amazon product ID
 		item_code_mapping = self.get_item_code_mapping_to_asin()
 
@@ -80,7 +77,6 @@ class ItemAmazonReport(object):
 			for asin in asin_list:
 				if asin in  amazon_asin_count_mapping:
 					amazon_actual_qty += int(amazon_asin_count_mapping.get(asin))
-			print asin_list,amazon_actual_qty
 		return amazon_actual_qty
 
 	def get_warehouse(self):
@@ -149,6 +145,7 @@ class ItemAmazonReport(object):
 			if i > 5:
 				#vwrite("Increment crossed 10")
 				break
+		print result
 		return result
 
 	def get_not_listing_reason(self,item_code):
