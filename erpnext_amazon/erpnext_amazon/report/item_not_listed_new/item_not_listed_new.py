@@ -67,6 +67,7 @@ class ItemAmazonReport(object):
 			item_not_listed_reason = self.get_not_listing_reason(item_code)
 			data.append([str(item_code),asin,int(rts_qty),amazon_erp_qty,amazon_actual_qty,item_not_listed_reason])
 		# return []
+		data.sort(key=lambda x: (x[2]+x[3]-x[4]),reverse=True)
 		return data
 
 	def get_amazon_count(self, item_code, item_code_mapping, amazon_asin_count_mapping):
