@@ -20,6 +20,7 @@ class ItemAmazonReport(object):
 		columns = [
 			_("Item Code") + ":Link/Item:120",
 			_("Amazon Product ID") + ":Data:120",
+			_("Item Group") + ":Data:120",
 			_("RTS Qty") + ":Float:120",
 			_("Amazon ERP Quantity") + ":Float:120",
 			_("Amazon Actual Quantity") + ":Float:120",
@@ -50,6 +51,7 @@ class ItemAmazonReport(object):
 		for item_code in item_codes:
 			amazon_erp_qty = 0
 			rts_qty = 0
+			item_group = frappe.db.get_value("Item",{'name':item_code},'item_group')
 			for warehouse in warehouses:
 				# for (k,v) in item_count_group_by_warehouse.iteritems():
 				if (item_code,warehouse) in item_count_group_by_warehouse:
@@ -65,9 +67,9 @@ class ItemAmazonReport(object):
 			if ((rts_qty + amazon_erp_qty + amazon_actual_qty) == 0) or (rts_qty == 0 and amazon_erp_qty == amazon_actual_qty):
 				continue
 			item_not_listed_reason = self.get_not_listing_reason(item_code)
-			data.append([str(item_code),asin,int(rts_qty),amazon_erp_qty,amazon_actual_qty,item_not_listed_reason])
+			data.append([str(item_code), asin, item_group,int(rts_qty),amazon_erp_qty,amazon_actual_qty,item_not_listed_reason])
 		# return []
-		data.sort(key=lambda x: (x[2]+x[3]-x[4]),reverse=True)
+		data.sort(key=lambda x: (x[3]+x[4]-x[5]),reverse=True)
 		return data
 
 	def get_amazon_count(self, item_code, item_code_mapping, amazon_asin_count_mapping):
