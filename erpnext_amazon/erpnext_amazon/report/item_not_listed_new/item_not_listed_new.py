@@ -20,6 +20,7 @@ class ItemAmazonReport(object):
 		columns = [
 			_("Item Code") + ":Link/Item:120",
 			_("Amazon Product ID") + ":Data:120",
+			_("Flipkart Product ID") + ":Data:120",
 			_("Item Group") + ":Data:120",
 			_("RTS Qty") + ":Float:120",
 			_("Amazon ERP Quantity") + ":Float:120",
@@ -63,13 +64,14 @@ class ItemAmazonReport(object):
 			
 			amazon_actual_qty = 0
 			asin = self.get_asin_from_erp(item_code)
+			fsin = self.get_fsin_from_erp(item_code)
 			amazon_actual_qty = self.get_amazon_count(item_code, item_code_mapping, amazon_asin_count_mapping)
 			if ((rts_qty + amazon_erp_qty + amazon_actual_qty) == 0) or (rts_qty == 0 and amazon_erp_qty == amazon_actual_qty):
 				continue
 			item_not_listed_reason = self.get_not_listing_reason(item_code)
-			data.append([str(item_code), asin, item_group,int(rts_qty),amazon_erp_qty,amazon_actual_qty,item_not_listed_reason])
+			data.append([str(item_code), asin, fsin, item_group,int(rts_qty),amazon_erp_qty,amazon_actual_qty,item_not_listed_reason])
 		# return []
-		data.sort(key=lambda x: (x[3]+x[4]-x[5]),reverse=True)
+		data.sort(key=lambda x: (x[4]+x[5]-x[6]),reverse=True)
 		return data
 
 	def get_amazon_count(self, item_code, item_code_mapping, amazon_asin_count_mapping):
@@ -92,6 +94,10 @@ class ItemAmazonReport(object):
 	def get_asin_from_erp(self, item_code):
 		asin = frappe.get_value("Item", item_code,"amazon_product_id")
 		return asin
+	
+	def get_fsin_from_erp(self, item_code):
+		fsin = frappe.get_value("Item", item_code,"flipkart_product_id")
+		return fsin
 
 	def get_items_counts_with_warehouse(self):
 		item_count_group_by_warehouse_query = """select i.item_code,sn.warehouse,count(sn.name) from `tabSerial No` sn inner join `tabItem` i on i.item_code=sn.item_code where sn.warehouse in (select name from `tabWarehouse` where parent_warehouse like "6. Ready to ship - Uyn") group by i.item_code,sn.warehouse;"""
