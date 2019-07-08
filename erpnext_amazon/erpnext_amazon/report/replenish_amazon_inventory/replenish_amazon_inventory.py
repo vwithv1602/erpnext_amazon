@@ -2,13 +2,7 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-<<<<<<< HEAD
 import frappe
-
-def execute(filters=None):
-	columns, data = [], []
-	return columns, data
-=======
 from sets import Set
 import frappe
 from frappe import _
@@ -160,4 +154,3 @@ class ItemAmazonReport(object):
 def execute(filters=None):
 	args = {}
 	return ItemAmazonReport().run(args)
->>>>>>> 78639bff3a0c7b28cb40af74c831ff4e61c2fafd
