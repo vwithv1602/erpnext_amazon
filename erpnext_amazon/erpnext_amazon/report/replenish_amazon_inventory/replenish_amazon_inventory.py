@@ -64,7 +64,7 @@ class ItemAmazonReport(object):
 			asin = self.get_asin_from_erp(item_code)
 			brand = frappe.get_value("Item",{"name":item_code},"brand")
 			amazon_actual_qty = self.get_amazon_count(item_code, item_code_mapping, amazon_asin_count_mapping)
-			if (rts_qty + amazon_erp_qty > amazon_actual_qty) and (amazon_actual_qty < 3) and (asin is not None) and (brand != "Apple"):
+			if (rts_qty + amazon_erp_qty > amazon_actual_qty) and (amazon_actual_qty < 3) and (asin is not None) and (asin != "") and (brand != "Apple"):
 				data.append([str(item_code), int(rts_qty),amazon_erp_qty,amazon_actual_qty,asin])
 		# return []
 		return data
