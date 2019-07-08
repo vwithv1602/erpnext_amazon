@@ -1,14 +1,22 @@
 {
  "add_total_row": 0, 
  "apply_user_permissions": 1, 
+<<<<<<< HEAD
  "creation": "2019-07-08 11:20:33.741984", 
+=======
+ "creation": "2019-07-08 10:14:10.149639", 
+>>>>>>> 78639bff3a0c7b28cb40af74c831ff4e61c2fafd
  "disabled": 0, 
  "docstatus": 0, 
  "doctype": "Report", 
  "idx": 0, 
  "is_standard": "Yes", 
  "letter_head": "Company LetterHead", 
+<<<<<<< HEAD
  "modified": "2019-07-08 11:29:10.346772", 
+=======
+ "modified": "2019-07-08 10:14:23.073804", 
+>>>>>>> 78639bff3a0c7b28cb40af74c831ff4e61c2fafd
  "modified_by": "Administrator", 
  "module": "Erpnext Amazon", 
  "name": "Replenish Amazon Inventory", 
