@@ -2,13 +2,6 @@
 # For license information, please see license.txt
 
 from __future__ import unicode_literals
-<<<<<<< HEAD
-import frappe
-
-def execute(filters=None):
-	columns, data = [], []
-	return columns, data
-=======
 from sets import Set
 import frappe
 from frappe import _
@@ -40,8 +33,8 @@ class ItemExceptionReport(object):
 		data = []
 
 		errror_code = {
-			'asin' : "ASIN not found",
-			'quantity' : "Low or No Quantity in ERP Found"
+			'asin' : 'ASIN not found',
+			'quantity' : 'Low or No Quantity in ERP Found'
 		}
 
 		warehouses = {
@@ -49,15 +42,18 @@ class ItemExceptionReport(object):
 			"amazon" : "Amazon Warehouse - Uyn"
 		}
 		
-		# Amazon Product ID -> Amazon Title
-		asin_to_amazon_title_mapping = self.get_amazon_data()
 
 		# Amazon Product ID -> Amazon Actual Count
-		asin_to_amazon_qty_mapping = ItemAmazonReport().get_amazon_data()
-
-		time.sleep(60)
+		asin_to_amazon_qty_mapping = self.get_amazon_data()
+		
+		# Amazon Product ID -> Amazon Title
+		asin_to_amazon_title_mapping = self.get_amazon_active_listing()
+		
 		# (Item Code, Warehouse) -> Quantity in that warehouse
 		item_count_group_by_warehouse = self.get_items_counts_with_warehouse()
+
+		encode_to_utf = lambda a: a.encode('utf-8').strip()
+		
 		# vwrite(item_count_group_by_warehouse)
 		for asin in asin_to_amazon_title_mapping:
 			row = []
@@ -66,31 +62,35 @@ class ItemExceptionReport(object):
 			error = None
 			asin_to_item_code = frappe.get_value("Item", {'amazon_product_id':asin},'name')
 			amazon_actual_qty = asin_to_amazon_qty_mapping.get(asin)
+			if amazon_actual_qty > 0:
+				if asin_to_item_code is not None:
+					item_rts_quantity = item_count_group_by_warehouse.get((asin_to_item_code,warehouses.get("rts"))) or 9
+					item_amazon_erp_quantity = item_count_group_by_warehouse.get((asin_to_item_code, warehouses.get("amazon"))) or 0
 
-			if asin_to_item_code is not None:
-				item_rts_quantity = item_count_group_by_warehouse.get((asin_to_item_code,warehouses.get("rts"))) or 9
-				item_amazon_erp_quantity = item_count_group_by_warehouse.get((asin_to_item_code, warehouses.get("amazon"))) or 0
-
-				if (item_rts_quantity + item_amazon_erp_quantity < amazon_actual_qty) or (item_rts_quantity + item_amazon_erp_quantity < 5):
-					error = errror_code['quantity']
-					row.append(asin)
-					row.append(asin_to_amazon_title_mapping[asin])
-					row.append(asin_to_item_code)
+					if (item_rts_quantity + item_amazon_erp_quantity < amazon_actual_qty) or (item_rts_quantity + item_amazon_erp_quantity < 5):
+						error = encode_to_utf(errror_code['quantity'])
+						row.append(encode_to_utf(asin))
+						row.append(encode_to_utf(asin_to_amazon_title_mapping[asin]))
+						row.append(encode_to_utf(asin_to_item_code))
+						row.append(amazon_actual_qty)
+						row.append(item_rts_quantity)
+						row.append(item_amazon_erp_quantity)
+						row.append(error)
+					if row:
+						data.append(row)
+				else:
+					error = encode_to_utf(errror_code['asin'])
+					row.append(encode_to_utf(asin))
+					row.append(encode_to_utf(asin_to_amazon_title_mapping[asin]))
+					row.append(encode_to_utf(""))
 					row.append(amazon_actual_qty)
-					row.append(item_rts_quantity)
-					row.append(item_amazon_erp_quantity)
+					row.append(0)
+					row.append(0)
 					row.append(error)
-			else:
-				error = errror_code['asin']
-				row.append(asin)
-				row.append(asin_to_amazon_title_mapping[asin])
-				row.append("")
-				row.append(amazon_actual_qty)
-				row.append(0)
-				row.append(0)
-				row.append(error)
-			
-			data.append(row)
+					data.append(row)
+				vwrite(row)
+				
+		vwrite(data)
 		return data
 
 			
@@ -133,7 +133,7 @@ class ItemExceptionReport(object):
 		return item_code_mapping
 	
 	def get_amazon_data(self):
-		params = {'ReportType':"_GET_MERCHANT_LISTINGS_DATA_"}
+		params = {'ReportType':"_GET_FBA_MYI_UNSUPPRESSED_INVENTORY_DATA_"}
 		report_result = get_request('request_report', params)
 		i = 0
 		amazon_prod_ids = []
@@ -155,17 +155,61 @@ class ItemExceptionReport(object):
 				reportResult = get_request('get_report',{'ReportId':generated_report_id})
 				res_array = re.split(r'\n+', reportResult)
 				i = 0
-				for line in res_array[1:len(res_array)-2]:
+				for line in res_array[1:]:
 					# if i > 0 and i < len(res_array)-1:
-					res_line = re.split(r'\t',line)
-					#vwrite(res_line)
-					result[res_line[22]] = res_line[0]
+					res_line = re.split(r'\t+', line)
+					if (res_line[3] == 'Unknown') or (res_line[4] == 'Unknown'):
+						continue
+					result[res_line[2]] = int(res_line[9]) + int(res_line[11])
 				i = i+1
 				break
 			else:
 				#vwrite("Submission processing error. Quit.")
 				break
 			if i > 5:
+				#vwrite("Increment crossed 10")
+				break
+		return result
+
+	
+	def get_amazon_active_listing(self):
+		params = {'ReportType':"_GET_MERCHANT_LISTINGS_DATA_"}
+		report_result = get_request('request_report', params)
+		i = 0
+		amazon_prod_ids = []
+		result = {}
+		encode_to_utf = lambda a: a.encode('utf-8').strip()
+		time.sleep(10)
+		while True:
+			i = i+1
+			params = {'ReportRequestIdList':[report_result.RequestReportResult.ReportRequestInfo.ReportRequestId]}
+			submission_list = get_request('get_report_request_list',params)
+			info =  submission_list.GetReportRequestListResult.ReportRequestInfo[0]
+			id = info.ReportRequestId
+			status = info.ReportProcessingStatus
+			#vwrite('Submission Id: {}. Current status: {}'.format(id, status))
+			
+			if (status in ('_SUBMITTED_', '_IN_PROGRESS_', '_UNCONFIRMED_')):
+				#vwrite('Sleeping for 5s and check again....')
+				time.sleep(5)
+			elif (status == '_DONE_'):
+				generated_report_id = info.GeneratedReportId
+				reportResult = get_request('get_report',{'ReportId':generated_report_id})
+				res_array = re.split(r'\n+', reportResult)
+				i = 0
+				for line in res_array[1:len(res_array)-2]:
+					# if i > 0 and i < len(res_array)-1:
+					res_line = re.split(r'\t',line)
+					try:
+						result[res_line[22]] = encode_to_utf(res_line[0]).strip()
+					except:
+						result[res_line[22]] = "Contains non Ascii character"
+				i = i+1
+				break
+			else:
+				#vwrite("Submission processing error. Quit.")
+				break
+			if i == 3:
 				#vwrite("Increment crossed 10")
 				break
 		return result
@@ -179,4 +223,3 @@ class ItemExceptionReport(object):
 def execute(filters=None):
 	args = {}
 	return ItemExceptionReport().run(args)
->>>>>>> 78639bff3a0c7b28cb40af74c831ff4e61c2fafd
