@@ -88,9 +88,9 @@ class ItemExceptionReport(object):
 					row.append(0)
 					row.append(error)
 					data.append(row)
-				vwrite(row)
+				#vwrite(row)
 				
-		vwrite(data)
+		#vwrite(data)
 		return data
 
 			
