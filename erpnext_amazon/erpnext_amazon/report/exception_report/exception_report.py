@@ -61,18 +61,18 @@ class ItemExceptionReport(object):
 			item_amazon_erp_quantity = 0
 			error = None
 			asin_to_item_code_query = """select name from `tabItem` where amazon_product_id like '%%{0}%%'""".format(asin)
-			asin_to_item_code = frappe.db.sql(asin_to_item_code_query, as_list=1)
+			asin_to_item_code = frappe.db.sql(asin_to_item_code_query, as_list=1)[0][0]
 			amazon_actual_qty = asin_to_amazon_qty_mapping.get(asin)
 			if amazon_actual_qty > 0:
 				if asin_to_item_code is not None:
-					item_rts_quantity = item_count_group_by_warehouse.get((asin_to_item_code,warehouses.get("rts")))
-					item_amazon_erp_quantity = item_count_group_by_warehouse.get((asin_to_item_code, warehouses.get("amazon")))
+					item_rts_quantity = item_count_group_by_warehouse.get((asin_to_item_code,warehouses.get("rts"))) or 0
+					item_amazon_erp_quantity = item_count_group_by_warehouse.get((asin_to_item_code, warehouses.get("amazon"))) or 0
 
 					if (item_rts_quantity + item_amazon_erp_quantity < amazon_actual_qty) or (item_rts_quantity + item_amazon_erp_quantity < 5):
 						error = encode_to_utf(errror_code['quantity'])
 						row.append(encode_to_utf(asin))
 						row.append(encode_to_utf(asin_to_amazon_title_mapping[asin]))
-						row.append(encode_to_utf(asin_to_item_code[0][0]))
+						row.append(encode_to_utf(asin_to_item_code))
 						row.append(amazon_actual_qty)
 						row.append(item_rts_quantity)
 						row.append(item_amazon_erp_quantity)
