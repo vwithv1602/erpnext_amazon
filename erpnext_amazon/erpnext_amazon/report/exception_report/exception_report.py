@@ -69,7 +69,7 @@ class ItemExceptionReport(object):
 					item_rts_quantity = item_count_group_by_warehouse.get((item_code,warehouses.get("rts"))) or 0
 					item_amazon_erp_quantity = item_count_group_by_warehouse.get((item_code, warehouses.get("amazon"))) or 0
 
-					if (item_rts_quantity + item_amazon_erp_quantity < amazon_actual_qty) or (item_rts_quantity + item_amazon_erp_quantity < 5):
+					if (item_rts_quantity + item_amazon_erp_quantity < 5) and (item_rts_quantity + item_amazon_erp_quantity < amazon_actual_qty):
 						error = encode_to_utf(errror_code['quantity'])
 						row.append(encode_to_utf(asin))
 						row.append(encode_to_utf(asin_to_amazon_title_mapping[asin]))
