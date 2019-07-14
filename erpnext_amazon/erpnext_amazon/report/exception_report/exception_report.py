@@ -64,7 +64,7 @@ class ItemExceptionReport(object):
 			asin_to_item_code = frappe.db.sql(asin_to_item_code_query, as_list=1)
 			amazon_actual_qty = asin_to_amazon_qty_mapping.get(asin)
 			if amazon_actual_qty > 0:
-				if asin_to_item_code is not None:
+				if asin_to_item_code:
 					item_code = asin_to_item_code[0][0]
 					item_rts_quantity = item_count_group_by_warehouse.get((item_code,warehouses.get("rts"))) or 0
 					item_amazon_erp_quantity = item_count_group_by_warehouse.get((item_code, warehouses.get("amazon"))) or 0
