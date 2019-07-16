@@ -46,6 +46,7 @@ class ItemAmazonReport(object):
 
 		# Mapping amazon product ID -> FBA count
 		amazon_asin_count_mapping = self.get_amazon_data()
+		vwrite(amazon_asin_count_mapping)
 
 		for item_code in item_codes:
 			amazon_erp_qty = 0
@@ -134,7 +135,7 @@ class ItemAmazonReport(object):
 					res_line = re.split(r'\t+', line)
 					if res_line[3] == 'Unknown' or res_line[4] == 'Unknown':
 						continue
-					result[res_line[2]] = int(res_line[9]) + int(res_line[11])
+					result[res_line[2]] = int(res_line[9]))
 					amazon_prod_ids.append(res_line[1])
 				i = i+1
 				break
