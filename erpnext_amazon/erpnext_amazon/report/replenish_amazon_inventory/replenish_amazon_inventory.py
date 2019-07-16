@@ -19,10 +19,10 @@ class ItemAmazonReport(object):
 	def get_columns(self):
 		"""return columns bab on filters"""
 		columns = [
-			_("Item Code") + ":Link/Item:120",
-			_("RTS Qty") + ":Float:120",
-			_("Amazon ERP Quantity") + ":Float:120",
-			_("Amazon Actual Quantity") + ":Float:120",
+			_("Item Code") + ":Link/Item:240",
+			_("RTS Qty") + ":Float:60",
+			_("Amazon ERP Quantity") + ":Float:60",
+			_("Amazon Actual Quantity") + ":Float:60",
 			_("Amazon Product ID") + ":Data:120"
 		]
 		return columns
