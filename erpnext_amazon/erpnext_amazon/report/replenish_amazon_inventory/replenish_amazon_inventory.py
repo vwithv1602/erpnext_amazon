@@ -23,6 +23,7 @@ class ItemAmazonReport(object):
 			_("RTS Qty") + ":Float:60",
 			_("Amazon ERP Quantity") + ":Float:60",
 			_("Amazon Actual Quantity") + ":Float:60",
+			_("Amazon Reserved Quantity") + ":Float:60",
 			_("Amazon Product ID") + ":Data:120"
 		]
 		return columns
@@ -44,7 +45,7 @@ class ItemAmazonReport(object):
 		# Mapping item_code -> amazon product ID
 		item_code_mapping = self.get_item_code_mapping_to_asin()
 
-		# Mapping amazon product ID -> FBA count
+		# Mapping amazon product ID -> FBA count, reserved Quantity
 		amazon_asin_count_mapping = self.get_amazon_data()
 		vwrite(amazon_asin_count_mapping)
 
@@ -66,7 +67,7 @@ class ItemAmazonReport(object):
 			brand = frappe.get_value("Item",{"name":item_code},"brand")
 			amazon_actual_qty = self.get_amazon_count(item_code, item_code_mapping, amazon_asin_count_mapping)
 			if (rts_qty + amazon_erp_qty > amazon_actual_qty) and (amazon_actual_qty < 3) and (asin is not None) and (asin != "") and (brand != "Apple"):
-				data.append([str(item_code), int(rts_qty),amazon_erp_qty,amazon_actual_qty,asin])
+				data.append([str(item_code), int(rts_qty),amazon_erp_qty,amazon_actual_qty[0],amazon_actual_qty[1],asin])
 		# return []
 		return data
 
@@ -135,7 +136,7 @@ class ItemAmazonReport(object):
 					res_line = re.split(r'\t+', line)
 					if res_line[3] == 'Unknown' or res_line[4] == 'Unknown':
 						continue
-					result[res_line[2]] = int(res_line[9])
+					result[res_line[2]] = (int(res_line[9]), int(res_line[11]))
 					amazon_prod_ids.append(res_line[1])
 				i = i+1
 				break
