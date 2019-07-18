@@ -66,8 +66,9 @@ class ItemAmazonReport(object):
 			asin = self.get_asin_from_erp(item_code)
 			brand = frappe.get_value("Item",{"name":item_code},"brand")
 			amazon_actual_qty = self.get_amazon_count(item_code, item_code_mapping, amazon_asin_count_mapping)
+			amazon_reserved_qty = self.get_amazon_reserved_count(item_code, item_code_mapping, amazon_asin_count_mapping)
 			if (rts_qty + amazon_erp_qty > amazon_actual_qty) and (amazon_actual_qty < 3) and (asin is not None) and (asin != "") and (brand != "Apple"):
-				data.append([str(item_code), int(rts_qty),amazon_erp_qty,amazon_actual_qty[0],amazon_actual_qty[1],asin])
+				data.append([str(item_code), int(rts_qty),amazon_erp_qty,amazon_actual_qty,amazon_reserved_qty[1],asin])
 		# return []
 		return data
 
@@ -78,7 +79,17 @@ class ItemAmazonReport(object):
 			asin_list = asin_list_str.split(',')
 			for asin in asin_list:
 				if asin in  amazon_asin_count_mapping:
-					amazon_actual_qty += int(amazon_asin_count_mapping.get(asin))
+					amazon_actual_qty += int(amazon_asin_count_mapping.get(asin)[0])
+		return amazon_actual_qty
+	
+	def get_amazon_reserved_count(self, item_code, item_code_mapping, amazon_asin_count_mapping):
+		amazon_actual_qty = 0
+		if item_code in item_code_mapping:
+			asin_list_str = item_code_mapping.get(item_code)
+			asin_list = asin_list_str.split(',')
+			for asin in asin_list:
+				if asin in  amazon_asin_count_mapping:
+					amazon_actual_qty += int(amazon_asin_count_mapping.get(asin)[1])
 		return amazon_actual_qty
 
 	def get_warehouse(self):
