@@ -98,7 +98,7 @@ class ItemAmazonReport(object):
 		return amazon_actual_qty
 
 	def item_code_to_delivery_note_count(self,item_code):
-		yesterday = str(datetime.date.today() - datetime.timdelta(-1))
+		yesterday = str(datetime.date.today() - datetime.timedelta(-1))
 		count_query = """select count(*) from `tabDelivery Note` as dn inner join `tabDelivery Note Item` as dni on dn.name = dni.parent where dni.item_code='{0}' and dn.docstatus = 1 and dn.is_return = 0 and dn.creation > '{1} 14:00:00.0000'""".format(item_code, yesterday)
 		total_count = frappe.db.sql(count_query,as_list = 1)
 		return total_count[0][0]
