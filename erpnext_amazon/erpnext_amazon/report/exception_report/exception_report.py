@@ -174,7 +174,7 @@ class ItemExceptionReport(object):
 					res_line = re.split(r'\t+', line)
 					if (res_line[3] == 'Unknown') or (res_line[4] == 'Unknown'):
 						continue
-					result[res_line[2]] = int(res_line[9]) + int(res_line[11])
+					result[res_line[2]] = (int(res_line[9]),int(res_line[11]))
 				i = i+1
 				break
 			else:
