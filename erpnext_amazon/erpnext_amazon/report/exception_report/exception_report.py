@@ -64,7 +64,7 @@ class ItemExceptionReport(object):
 			asin_to_item_code = frappe.db.sql(asin_to_item_code_query, as_list=1)
 			amazon_actual_qty = asin_to_amazon_qty_mapping.get(asin)
 			if amazon_actual_qty:
-				amazon_actual_qty = amazon_actual_qty[0]
+				amazon_actual_qty = amazon_actual_qty[0] + amazon_actual_qty[1]
 			else:
 				amazon_actual_qty = 0
 			if amazon_actual_qty > 0:
