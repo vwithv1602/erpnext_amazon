@@ -21,9 +21,9 @@ class ItemAmazonReport(object):
 		columns = [
 			_("Item Code") + ":Link/Item:340",
 			_("RTS Qty") + ":Float:60",
-			_("Amazon ERP Quantity") + ":Float:60",
-			_("Amazon Actual Quantity") + ":Float:60",
-			_("Amazon Reserved Quantity") + ":Float:60",
+			_("Amazon ERP Quantity") + ":Float:100",
+			_("Amazon Actual Quantity") + ":Float:100",
+			_("Amazon Reserved Quantity") + ":Float:100",
 			_("Amazon Product ID") + ":Data:120",
 			_("Not Listing Reason") + ":Data:120"
 		]
@@ -70,7 +70,7 @@ class ItemAmazonReport(object):
 			amazon_reserved_qty = self.get_amazon_reserved_count(item_code, item_code_mapping, amazon_asin_count_mapping)
 			not_listing_reason = frappe.db.get_value('Item',{'name':item_code},'not_listing_reason')
 			if (rts_qty + amazon_erp_qty > amazon_actual_qty) and (amazon_actual_qty < 3) and (asin is not None) and (asin != "") and (brand != "Apple"):
-				data.append([str(item_code), int(rts_qty),amazon_erp_qty,amazon_actual_qty,amazon_reserved_qty,asin])
+				data.append([str(item_code), int(rts_qty),amazon_erp_qty,amazon_actual_qty,amazon_reserved_qty,asin,not_listing_reason])
 		# return []
 		return data
 
