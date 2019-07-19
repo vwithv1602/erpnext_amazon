@@ -92,7 +92,6 @@ class ItemExceptionReport(object):
 					if row:
 						data.append(row)
 				else:
-					error = encode_to_utf(errror_code['asin'])
 					row.append(encode_to_utf(asin))
 					row.append(encode_to_utf(asin_to_amazon_title_mapping[asin]))
 					row.append(encode_to_utf(""))
