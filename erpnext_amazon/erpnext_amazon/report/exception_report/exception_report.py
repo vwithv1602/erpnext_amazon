@@ -23,7 +23,8 @@ class ItemExceptionReport(object):
 			_("Amazon ASIN") + ":Data:120",
 			_("Amazon Title") + ":Data:120",
 			_("Item Code") + ":Data:340",
-			_("Amazon Qty") + ":Float:120",
+			_("Amazon Actual Qty") + ":Float:120",
+			_("Amazon Reserved Qty") + ":Float:120",
 			_("RTS Qty") + ":Float:120",
 			_("Amazon ERP Quantity") + ":Float:120",
 			_("Not Listing Reason") + ":Data:120"
@@ -61,7 +62,7 @@ class ItemExceptionReport(object):
 			error = None
 			asin_to_item_code_query = """select name from `tabItem` where amazon_product_id like '%%{0}%%'""".format(asin)
 			asin_to_item_code = frappe.db.sql(asin_to_item_code_query, as_list=1)
-			amazon_actual_qty = asin_to_amazon_qty_mapping.get(asin)
+			amazon_actual_qty = asin_to_amazon_qty_mapping.get(asin)[0]
 			if amazon_actual_qty > 0:
 				if asin_to_item_code:
 					for item in asin_to_item_code:
@@ -77,6 +78,7 @@ class ItemExceptionReport(object):
 						row.append(encode_to_utf(asin_to_amazon_title_mapping[asin]))
 						row.append(encode_to_utf(item_code))
 						row.append(amazon_actual_qty)
+						row.append(asin_to_amazon_qty_mapping.get(asin)[1])
 						row.append(item_rts_quantity)
 						row.append(item_amazon_erp_quantity)
 						row.append('\n'.join(not_listing_reason))
@@ -88,6 +90,7 @@ class ItemExceptionReport(object):
 					row.append(encode_to_utf(asin_to_amazon_title_mapping[asin]))
 					row.append(encode_to_utf(""))
 					row.append(amazon_actual_qty)
+					row.append(asin_to_amazon_qty_mapping.get(asin)[1])
 					row.append(0)
 					row.append(0)
 					row.append("")
@@ -107,8 +110,19 @@ class ItemExceptionReport(object):
 			asin_list = asin_list_str.split(',')
 			for asin in asin_list:
 				if asin in  amazon_asin_count_mapping:
-					amazon_actual_qty += int(amazon_asin_count_mapping.get(asin))
+					amazon_actual_qty += int(amazon_asin_count_mapping.get(asin)[0])
 		return amazon_actual_qty
+	
+	def get_amazon_reserved_count(self, item_code, item_code_mapping, amazon_asin_count_mapping):
+		amazon_actual_qty = 0
+		if item_code in item_code_mapping:
+			asin_list_str = item_code_mapping.get(item_code)
+			asin_list = asin_list_str.split(',')
+			for asin in asin_list:
+				if asin in  amazon_asin_count_mapping:
+					amazon_actual_qty += int(amazon_asin_count_mapping.get(asin)[1])
+		return amazon_actual_qty
+
 
 	def get_warehouse(self):
 		warehouse_query = '''select name from `tabWarehouse` where parent_warehouse like "6. Ready to ship - Uyn"'''
@@ -164,7 +178,7 @@ class ItemExceptionReport(object):
 					res_line = re.split(r'\t+', line)
 					if (res_line[3] == 'Unknown') or (res_line[4] == 'Unknown'):
 						continue
-					result[res_line[2]] = int(res_line[9]) + int(res_line[11])
+					result[res_line[2]] = (int(res_line[9]), int(res_line[11]))
 				i = i+1
 				break
 			else:
