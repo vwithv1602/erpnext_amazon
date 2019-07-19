@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 import frappe
 from sets import Set
+import datetime
 import frappe
 from frappe import _
 import time
@@ -24,6 +25,7 @@ class ItemAmazonReport(object):
 			_("Amazon ERP Quantity") + ":Float:100",
 			_("Amazon Actual Quantity") + ":Float:100",
 			_("Amazon Reserved Quantity") + ":Float:100",
+			_("Packed") + ":Float:100",
 			_("Amazon Product ID") + ":Data:120",
 			_("Not Listing Reason") + ":Data:120"
 		]
@@ -68,9 +70,10 @@ class ItemAmazonReport(object):
 			brand = frappe.get_value("Item",{"name":item_code},"brand")
 			amazon_actual_qty = self.get_amazon_count(item_code, item_code_mapping, amazon_asin_count_mapping)
 			amazon_reserved_qty = self.get_amazon_reserved_count(item_code, item_code_mapping, amazon_asin_count_mapping)
+			packed_no = self.item_code_to_delivery_note_count(item_code)
 			not_listing_reason = frappe.db.get_value('Item',{'name':item_code},'not_listing_reason')
 			if (rts_qty + amazon_erp_qty > amazon_actual_qty) and (amazon_actual_qty < 3) and (asin is not None) and (asin != "") and (brand != "Apple"):
-				data.append([str(item_code), int(rts_qty),amazon_erp_qty,amazon_actual_qty,amazon_reserved_qty,asin,not_listing_reason])
+				data.append([str(item_code), int(rts_qty),amazon_erp_qty,amazon_actual_qty,amazon_reserved_qty, packed_no,asin,not_listing_reason])
 		# return []
 		return data
 
@@ -93,6 +96,12 @@ class ItemAmazonReport(object):
 				if asin in  amazon_asin_count_mapping:
 					amazon_actual_qty += int(amazon_asin_count_mapping.get(asin)[1])
 		return amazon_actual_qty
+
+	def item_code_to_delivery_note_count(self,item_code):
+		yesterday = str(datetime.date.today() - datetime.timdelta(-1))
+		count_query = """select count(*) from `tabDelivery Note` as dn inner join `tabDelivery Note Item` as dni on dn.name = dni.parent where dni.item_code='{0}' and dn.docstatus = 1 and dn.is_return = 0 and dn.creation > '{1} 14:00:00.0000'""".format(item_code, yesterday)
+		total_count = frappe.db.sql(count_query,as_list = 1)
+		return total_count[0][0]
 
 	def get_warehouse(self):
 		warehouse_query = '''select name from `tabWarehouse` where parent_warehouse like "6. Ready to ship - Uyn"'''
