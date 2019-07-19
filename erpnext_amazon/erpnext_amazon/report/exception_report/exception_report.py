@@ -7,6 +7,7 @@ import frappe
 from frappe import _
 import time
 import re
+from erpnext.stock.stock_balance import get_balance_qty_from_sle
 from erpnext_amazon.amazon_requests import get_request
 from erpnext_amazon.erpnext_amazon.report.item_not_listed_new.item_not_listed_new import ItemAmazonReport
 from erpnext_ebay.vlog import vwrite
@@ -21,21 +22,16 @@ class ItemExceptionReport(object):
 		columns = [
 			_("Amazon ASIN") + ":Data:120",
 			_("Amazon Title") + ":Data:120",
-			_("Item Code") + ":Data:120",
+			_("Item Code") + ":Data:340",
 			_("Amazon Qty") + ":Float:120",
 			_("RTS Qty") + ":Float:120",
 			_("Amazon ERP Quantity") + ":Float:120",
-			_("Error Type") + ":Data:120"
+			_("Not Listing Reason") + ":Data:120"
 		]
 		return columns
 	
 	def get_data(self):
 		data = []
-
-		errror_code = {
-			'asin' : 'ASIN not found',
-			'quantity' : 'Low or No Quantity in ERP Found'
-		}
 
 		warehouses = {
 			"rts": "G3 Ready To Ship - Uyn",
@@ -53,10 +49,13 @@ class ItemExceptionReport(object):
 		item_count_group_by_warehouse = self.get_items_counts_with_warehouse()
 
 		encode_to_utf = lambda a: a.encode('utf-8').strip()
+
+
 		
 		# vwrite(item_count_group_by_warehouse)
 		for asin in asin_to_amazon_title_mapping:
 			row = []
+			not_listing_reason = []
 			item_rts_quantity = 0
 			item_amazon_erp_quantity = 0
 			error = None
@@ -67,18 +66,20 @@ class ItemExceptionReport(object):
 				if asin_to_item_code:
 					for item in asin_to_item_code:
 						item_code = item[0]
-						item_rts_quantity += item_count_group_by_warehouse.get((item_code,warehouses.get("rts"))) or 0
-						item_amazon_erp_quantity += item_count_group_by_warehouse.get((item_code, warehouses.get("amazon"))) or 0
+						reason = frappe.db.get_value('Item',{'name':item_code},'not_listing_reason')
+						if reason:
+							not_listing_reason.append(reason)
+						item_rts_quantity += (item_count_group_by_warehouse.get((item_code,warehouses.get("rts"))) or 0)
+						item_amazon_erp_quantity += (item_count_group_by_warehouse.get((item_code, warehouses.get("amazon"))) or 0)
 
 					if (item_rts_quantity + item_amazon_erp_quantity < 5) and (item_rts_quantity + item_amazon_erp_quantity < amazon_actual_qty):
-						error = encode_to_utf(errror_code['quantity'])
 						row.append(encode_to_utf(asin))
 						row.append(encode_to_utf(asin_to_amazon_title_mapping[asin]))
 						row.append(encode_to_utf(item_code))
 						row.append(amazon_actual_qty)
 						row.append(item_rts_quantity)
 						row.append(item_amazon_erp_quantity)
-						row.append(error)
+						row.append('\n'.join(not_listing_reason))
 					if row:
 						data.append(row)
 				else:
@@ -89,7 +90,7 @@ class ItemExceptionReport(object):
 					row.append(amazon_actual_qty)
 					row.append(0)
 					row.append(0)
-					row.append(error)
+					row.append("")
 					data.append(row)
 				#vwrite(row)
 				
