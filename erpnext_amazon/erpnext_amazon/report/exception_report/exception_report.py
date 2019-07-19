@@ -62,7 +62,11 @@ class ItemExceptionReport(object):
 			error = None
 			asin_to_item_code_query = """select name from `tabItem` where amazon_product_id like '%%{0}%%'""".format(asin)
 			asin_to_item_code = frappe.db.sql(asin_to_item_code_query, as_list=1)
-			amazon_actual_qty = asin_to_amazon_qty_mapping.get(asin)[0]
+			amazon_actual_qty = asin_to_amazon_qty_mapping.get(asin)
+			if amazon_actual_qty:
+				amazon_actual_qty = amazon_actual_qty[0]
+			else:
+				amazon_actual_qty = 0
 			if amazon_actual_qty > 0:
 				if asin_to_item_code:
 					for item in asin_to_item_code:
@@ -78,7 +82,10 @@ class ItemExceptionReport(object):
 						row.append(encode_to_utf(asin_to_amazon_title_mapping[asin]))
 						row.append(encode_to_utf(item_code))
 						row.append(amazon_actual_qty)
-						row.append(asin_to_amazon_qty_mapping.get(asin)[1])
+						if asin_to_amazon_qty_mapping.get(asin):
+							row.append(asin_to_amazon_qty_mapping.get(asin)[1])
+						else:
+							row.append(0)
 						row.append(item_rts_quantity)
 						row.append(item_amazon_erp_quantity)
 						row.append('\n'.join(not_listing_reason))
@@ -90,7 +97,10 @@ class ItemExceptionReport(object):
 					row.append(encode_to_utf(asin_to_amazon_title_mapping[asin]))
 					row.append(encode_to_utf(""))
 					row.append(amazon_actual_qty)
-					row.append(asin_to_amazon_qty_mapping.get(asin)[1])
+					if asin_to_amazon_qty_mapping.get(asin):
+						row.append(asin_to_amazon_qty_mapping.get(asin)[1])
+					else:
+						row.append(0)
 					row.append(0)
 					row.append(0)
 					row.append("")
