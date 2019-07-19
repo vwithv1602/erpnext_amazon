@@ -23,7 +23,7 @@ class ItemExceptionReport(object):
 			_("Amazon ASIN") + ":Data:120",
 			_("Amazon Title") + ":Data:120",
 			_("Item Code") + ":Data:340",
-			_("Amazon Actual Qty") + ":Float:120",
+			_("Amazon Available Qty") + ":Float:120",
 			_("Amazon Reserved Qty") + ":Float:120",
 			_("RTS Qty") + ":Float:120",
 			_("Amazon ERP Quantity") + ":Float:120",
@@ -59,10 +59,17 @@ class ItemExceptionReport(object):
 			not_listing_reason = []
 			item_rts_quantity = 0
 			item_amazon_erp_quantity = 0
-			error = None
 			asin_to_item_code_query = """select name from `tabItem` where amazon_product_id like '%%{0}%%'""".format(asin)
 			asin_to_item_code = frappe.db.sql(asin_to_item_code_query, as_list=1)
 			amazon_actual_qty = asin_to_amazon_qty_mapping.get(asin)
+			if amazon_actual_qty:
+				amazon_available_qty = asin_to_amazon_qty_mapping.get(asin)[0]
+				amazon_reserved_qty = asin_to_amazon_qty_mapping.get(asin)[1]
+				amazon_actual_qty = amazon_available_qty + amazon_reserved_qty
+			else:
+				amazon_actual_qty = 0
+				amazon_available_qty = 0
+				amazon_reserved_qty = 0
 			if amazon_actual_qty > 0:
 				if asin_to_item_code:
 					for item in asin_to_item_code:
@@ -77,8 +84,8 @@ class ItemExceptionReport(object):
 						row.append(encode_to_utf(asin))
 						row.append(encode_to_utf(asin_to_amazon_title_mapping[asin]))
 						row.append(encode_to_utf(item_code))
-						row.append(amazon_actual_qty)
-						row.append(0)
+						row.append(amazon_available_qty)
+						row.append(amazon_reserved_qty)
 						row.append(item_rts_quantity)
 						row.append(item_amazon_erp_quantity)
 						row.append('\n'.join(not_listing_reason))
@@ -89,8 +96,8 @@ class ItemExceptionReport(object):
 					row.append(encode_to_utf(asin))
 					row.append(encode_to_utf(asin_to_amazon_title_mapping[asin]))
 					row.append(encode_to_utf(""))
-					row.append(amazon_actual_qty)
-					row.append(0)
+					row.append(amazon_available_qty)
+					row.append(amazon_reserved_qty)
 					row.append(0)
 					row.append(0)
 					row.append("")
