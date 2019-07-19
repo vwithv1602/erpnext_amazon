@@ -6,6 +6,7 @@ from sets import Set
 import frappe
 from frappe import _
 import time
+import datetime
 import re
 from erpnext.stock.stock_balance import get_balance_qty_from_sle
 from erpnext_amazon.amazon_requests import get_request
@@ -25,6 +26,7 @@ class ItemExceptionReport(object):
 			_("Item Code") + ":Data:340",
 			_("Amazon Available Qty") + ":Float:120",
 			_("Amazon Reserved Qty") + ":Float:120",
+			_("Packed") + ":Float:120",
 			_("RTS Qty") + ":Float:120",
 			_("Amazon ERP Quantity") + ":Float:120",
 			_("Not Listing Reason") + ":Data:120"
@@ -59,6 +61,7 @@ class ItemExceptionReport(object):
 			not_listing_reason = []
 			item_rts_quantity = 0
 			item_amazon_erp_quantity = 0
+			packed_no = 0
 			asin_to_item_code_query = """select name from `tabItem` where amazon_product_id like '%%{0}%%'""".format(asin)
 			asin_to_item_code = frappe.db.sql(asin_to_item_code_query, as_list=1)
 			amazon_actual_qty = asin_to_amazon_qty_mapping.get(asin)
@@ -74,6 +77,7 @@ class ItemExceptionReport(object):
 				if asin_to_item_code:
 					for item in asin_to_item_code:
 						item_code = item[0]
+						packed_no += self.item_code_to_delivery_note_count(item_code)
 						reason = frappe.db.get_value('Item',{'name':item_code},'not_listing_reason')
 						if reason:
 							not_listing_reason.append(reason)
@@ -86,6 +90,7 @@ class ItemExceptionReport(object):
 						row.append(encode_to_utf(item_code))
 						row.append(amazon_available_qty)
 						row.append(amazon_reserved_qty)
+						row.append(packed_no)
 						row.append(item_rts_quantity)
 						row.append(item_amazon_erp_quantity)
 						row.append('\n'.join(not_listing_reason))
@@ -97,6 +102,7 @@ class ItemExceptionReport(object):
 					row.append(encode_to_utf(""))
 					row.append(amazon_available_qty)
 					row.append(amazon_reserved_qty)
+					row.append(0)
 					row.append(0)
 					row.append(0)
 					row.append("")
@@ -118,6 +124,12 @@ class ItemExceptionReport(object):
 				if asin in  amazon_asin_count_mapping:
 					amazon_actual_qty += int(amazon_asin_count_mapping.get(asin))
 		return amazon_actual_qty
+
+	def item_code_to_delivery_note_count(self,item_code):
+		yesterday = str(datetime.date.today() - datetime.timedelta(1))
+		count_query = """select count(*) from `tabDelivery Note` as dn inner join `tabDelivery Note Item` as dni on dn.name = dni.parent where dni.item_code='{0}' and dn.docstatus = 1 and dn.is_return = 0 and dn.creation > '{1} 14:00:00.0000'""".format(item_code, yesterday)
+		total_count = frappe.db.sql(count_query,as_list = 1)
+		return total_count[0][0]
 
 	def get_warehouse(self):
 		warehouse_query = '''select name from `tabWarehouse` where parent_warehouse like "6. Ready to ship - Uyn"'''
