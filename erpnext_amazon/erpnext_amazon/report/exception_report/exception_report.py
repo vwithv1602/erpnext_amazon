@@ -42,8 +42,8 @@ class ItemExceptionReport(object):
 		}
 		
 
-		# Amazon Product ID -> Amazon Actual Count
-		asin_to_amazon_qty_mapping = self.get_amazon_data()
+		# item code -> Amazon Actual Count
+		item_to_amazon_qty_mapping = self.get_amazon_data()
 		
 		# Amazon Product ID -> Amazon Title
 		asin_to_amazon_title_mapping = self.get_amazon_active_listing()
@@ -64,15 +64,19 @@ class ItemExceptionReport(object):
 			packed_no = 0
 			asin_to_item_code_query = """select name from `tabItem` where amazon_product_id like '%%{0}%%'""".format(asin)
 			asin_to_item_code = frappe.db.sql(asin_to_item_code_query, as_list=1)
-			amazon_actual_qty = asin_to_amazon_qty_mapping.get(asin)
-			if amazon_actual_qty:
-				amazon_available_qty = asin_to_amazon_qty_mapping.get(asin)[0]
-				amazon_reserved_qty = asin_to_amazon_qty_mapping.get(asin)[1]
+			item_code = None
+			if asin_to_item_code:
+				if len(asin_to_item_code[0]) > 0:
+					item_code = asin_to_item_code[0][0]
+			
+			if item_code:
+				amazon_available_qty,amazon_reserved_qty = item_to_amazon_qty_mapping.get(item_code)
 				amazon_actual_qty = amazon_available_qty + amazon_reserved_qty
 			else:
 				amazon_actual_qty = 0
 				amazon_available_qty = 0
 				amazon_reserved_qty = 0
+
 			if amazon_actual_qty > 0:
 				if asin_to_item_code:
 					for item in asin_to_item_code:
@@ -84,7 +88,7 @@ class ItemExceptionReport(object):
 						item_rts_quantity += (item_count_group_by_warehouse.get((item_code,warehouses.get("rts"))) or 0)
 						item_amazon_erp_quantity += (item_count_group_by_warehouse.get((item_code, warehouses.get("amazon"))) or 0)
 
-					if (item_rts_quantity + item_amazon_erp_quantity < 5) and (item_rts_quantity + item_amazon_erp_quantity < amazon_actual_qty) and (amazon_actual_qty != packed_no + item_rts_quantity + item_amazon_erp_quantity):
+					if (item_rts_quantity + item_amazon_erp_quantity < 5) and (item_rts_quantity + item_amazon_erp_quantity + packed_no < amazon_actual_qty):
 						row.append(encode_to_utf(asin))
 						row.append(encode_to_utf(asin_to_amazon_title_mapping[asin]))
 						row.append(encode_to_utf(item_code))
@@ -111,19 +115,6 @@ class ItemExceptionReport(object):
 				
 		#vwrite(data)
 		return data
-
-			
-
-
-	def get_amazon_count(self, item_code, item_code_mapping, amazon_asin_count_mapping):
-		amazon_actual_qty = 0
-		if item_code in item_code_mapping:
-			asin_list_str = item_code_mapping.get(item_code)
-			asin_list = asin_list_str.split(',')
-			for asin in asin_list:
-				if asin in  amazon_asin_count_mapping:
-					amazon_actual_qty += int(amazon_asin_count_mapping.get(asin))
-		return amazon_actual_qty
 
 	def item_code_to_delivery_note_count(self,item_code):
 		yesterday = str(datetime.date.today() - datetime.timedelta(1))
@@ -158,44 +149,12 @@ class ItemExceptionReport(object):
 		return item_code_mapping
 	
 	def get_amazon_data(self):
-		params = {'ReportType':"_GET_FBA_MYI_UNSUPPRESSED_INVENTORY_DATA_"}
-		report_result = get_request('request_report', params)
-		i = 0
-		amazon_prod_ids = []
 		result = {}
-		while True:
-			i = i+1
-			params = {'ReportRequestIdList':[report_result.RequestReportResult.ReportRequestInfo.ReportRequestId]}
-			submission_list = get_request('get_report_request_list',params)
-			info =  submission_list.GetReportRequestListResult.ReportRequestInfo[0]
-			id = info.ReportRequestId
-			status = info.ReportProcessingStatus
-			#vwrite('Submission Id: {}. Current status: {}'.format(id, status))
-			
-			if (status in ('_SUBMITTED_', '_IN_PROGRESS_', '_UNCONFIRMED_')):
-				#vwrite('Sleeping for 5s and check again....')
-				time.sleep(5)
-			elif (status == '_DONE_'):
-				generated_report_id = info.GeneratedReportId
-				reportResult = get_request('get_report',{'ReportId':generated_report_id})
-				res_array = re.split(r'\n+', reportResult)
-				i = 0
-				for line in res_array[1:]:
-					# if i > 0 and i < len(res_array)-1:
-					res_line = re.split(r'\t+', line)
-					if (res_line[3] == 'Unknown') or (res_line[4] == 'Unknown'):
-						continue
-					result[res_line[2]] = (int(res_line[9]),int(res_line[11]))
-				i = i+1
-				break
-			else:
-				#vwrite("Submission processing error. Quit.")
-				break
-			if i > 5:
-				#vwrite("Increment crossed 10")
-				break
+		all_items_with_asins_query = """select name,amazon_available_quantity,amazon_reserved_quantity from `tabItem` where amazon_product_id is not null and amazon_product_id != ''"""
+		all_items_with_asins_dict = frappe.db.sql(all_items_with_asins_query,as_dict=1)
+		for lines in all_items_with_asins_dict:
+			result[lines.get('name')] = (int(lines.get('amazon_available_quantity')), int(lines.get('amazon_reserved_quantity')))
 		return result
-
 	
 	def get_amazon_active_listing(self):
 		params = {'ReportType':"_GET_MERCHANT_LISTINGS_DATA_"}
@@ -204,7 +163,6 @@ class ItemExceptionReport(object):
 		amazon_prod_ids = []
 		result = {}
 		encode_to_utf = lambda a: a.encode('utf-8').strip()
-		time.sleep(10)
 		while True:
 			i = i+1
 			params = {'ReportRequestIdList':[report_result.RequestReportResult.ReportRequestInfo.ReportRequestId]}
