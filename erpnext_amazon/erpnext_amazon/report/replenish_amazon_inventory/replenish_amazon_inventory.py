@@ -23,9 +23,9 @@ class ItemAmazonReport(object):
 			_("Item Code") + ":Link/Item:340",
 			_("RTS Qty") + ":Float:60",
 			_("Amazon ERP Quantity") + ":Float:100",
+			_("Packed") + ":Float:100",
 			_("Amazon Actual Quantity") + ":Float:100",
 			_("Amazon Reserved Quantity") + ":Float:100",
-			_("Packed") + ":Float:100",
 			_("Amazon Product ID") + ":Data:120",
 			_("Not Listing Reason") + ":Data:120"
 		]
@@ -48,9 +48,8 @@ class ItemAmazonReport(object):
 		# Mapping item_code -> amazon product ID
 		item_code_mapping = self.get_item_code_mapping_to_asin()
 
-		# Mapping amazon product ID -> FBA count, reserved Quantity
-		amazon_asin_count_mapping = self.get_amazon_data()
-		vwrite(amazon_asin_count_mapping)
+		# Item Code -> FBA count, reserved Quantity
+		item_amazon_count_mapping = self.get_amazon_data()
 
 		for item_code in item_codes:
 			amazon_erp_qty = 0
@@ -66,36 +65,18 @@ class ItemAmazonReport(object):
 						amazon_erp_qty = item_count_group_by_warehouse.get((item_code,warehouse))
 			
 			amazon_actual_qty = 0
+			amazon_reserved_qty = 0
 			asin = self.get_asin_from_erp(item_code)
 			brand = frappe.get_value("Item",{"name":item_code},"brand")
-			amazon_actual_qty = self.get_amazon_count(item_code, item_code_mapping, amazon_asin_count_mapping)
-			amazon_reserved_qty = self.get_amazon_reserved_count(item_code, item_code_mapping, amazon_asin_count_mapping)
+			if item_code in item_amazon_count_mapping:
+				amazon_actual_qty = item_amazon_count_mapping.get(item_code)[0]
+				amazon_reserved_qty = item_amazon_count_mapping.get(item_code)[1]
 			packed_no = self.item_code_to_delivery_note_count(item_code)
 			not_listing_reason = frappe.db.get_value('Item',{'name':item_code},'not_listing_reason')
 			if (rts_qty + amazon_erp_qty > amazon_actual_qty) and (amazon_actual_qty < 3) and (amazon_actual_qty + amazon_reserved_qty != amazon_erp_qty + packed_no + rts_qty)and (asin is not None) and (asin != "") and (brand != "Apple"):
-				data.append([str(item_code), int(rts_qty),amazon_erp_qty,amazon_actual_qty,amazon_reserved_qty, packed_no,asin,not_listing_reason])
+				data.append([str(item_code), int(rts_qty),amazon_erp_qty,packed_no,amazon_actual_qty,amazon_reserved_qty, asin,not_listing_reason])
 		# return []
 		return data
-
-	def get_amazon_count(self, item_code, item_code_mapping, amazon_asin_count_mapping):
-		amazon_actual_qty = 0
-		if item_code in item_code_mapping:
-			asin_list_str = item_code_mapping.get(item_code)
-			asin_list = asin_list_str.split(',')
-			for asin in asin_list:
-				if asin in  amazon_asin_count_mapping:
-					amazon_actual_qty += int(amazon_asin_count_mapping.get(asin)[0])
-		return amazon_actual_qty
-	
-	def get_amazon_reserved_count(self, item_code, item_code_mapping, amazon_asin_count_mapping):
-		amazon_actual_qty = 0
-		if item_code in item_code_mapping:
-			asin_list_str = item_code_mapping.get(item_code)
-			asin_list = asin_list_str.split(',')
-			for asin in asin_list:
-				if asin in  amazon_asin_count_mapping:
-					amazon_actual_qty += int(amazon_asin_count_mapping.get(asin)[1])
-		return amazon_actual_qty
 
 	def item_code_to_delivery_note_count(self,item_code):
 		yesterday = str(datetime.date.today() - datetime.timedelta(1))
@@ -130,44 +111,11 @@ class ItemAmazonReport(object):
 		return item_code_mapping
 	
 	def get_amazon_data(self):
-		params = {'ReportType':"_GET_FBA_MYI_UNSUPPRESSED_INVENTORY_DATA_"}
-		report_result = get_request('request_report', params)
-		i = 0
-		amazon_prod_ids = []
 		result = {}
-		while True:
-			i = i+1
-			params = {'ReportRequestIdList':[report_result.RequestReportResult.ReportRequestInfo.ReportRequestId]}
-			submission_list = get_request('get_report_request_list',params)
-			info =  submission_list.GetReportRequestListResult.ReportRequestInfo[0]
-			id = info.ReportRequestId
-			status = info.ReportProcessingStatus
-			#vwrite('Submission Id: {}. Current status: {}'.format(id, status))
-			
-			if (status in ('_SUBMITTED_', '_IN_PROGRESS_', '_UNCONFIRMED_')):
-				#vwrite('Sleeping for 5s and check again....')
-				time.sleep(5)
-			elif (status == '_DONE_'):
-				generated_report_id = info.GeneratedReportId
-				reportResult = get_request('get_report',{'ReportId':generated_report_id})
-				res_array = re.split(r'\n+', reportResult)
-				i = 0
-				#vwrite(res_array)
-				for line in res_array[1:]:
-					# if i > 0 and i < len(res_array)-1:
-					res_line = re.split(r'\t+', line)
-					if res_line[3] == 'Unknown' or res_line[4] == 'Unknown':
-						continue
-					result[res_line[2]] = (int(res_line[9]), int(res_line[11]))
-					amazon_prod_ids.append(res_line[1])
-				i = i+1
-				break
-			else:
-				#vwrite("Submission processing error. Quit.")
-				break
-			if i > 5:
-				#vwrite("Increment crossed 10")
-				break
+		all_items_with_asins_query = """select name,amazon_available_quantity,amazon_reserved_quantity from `tabItem` where amazon_product_id is not null and amazon_product_id != ''"""
+		all_items_with_asins_dict = frappe.db.sql(all_items_with_asins_query,as_dict=1)
+		for lines in all_items_with_asins_dict:
+			result[lines.get('name')] = (int(lines.get('amazon_available_quantity')), int(lines.get('amazon_reserved_quantity')))
 		return result
 
 	def run(self, args):
