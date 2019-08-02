@@ -94,6 +94,11 @@ scheduler_events = {
 	"all": [
 		"erpnext_amazon.api.sync_amazon"
 	]
+	"cron": {
+		"0 */2 * * *" : [
+			"erpnext_amazon.client.update_item_list_amazon_qty"
+		]
+	}
 }
 # scheduler_events = {
 # 	"all": [
