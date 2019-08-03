@@ -29,6 +29,9 @@ def update_item_list_amazon_qty():
             if asin in asin_to_amazon_qty_mapping:
                 item_available_qty += asin_to_amazon_qty_mapping.get(asin)[0]
                 item_reserved_qty += asin_to_amazon_qty_mapping.get(asin)[1]
+        if "B07ML3QRLL" in asin_list:
+            vwrite("item available quantity for B07ML3QRLL is {}".format(item_available_qty))
+            vwrite("item reserved quantity for B07ML3QRLL is  {}".format(item_reserved_qty))
         update_query = """update `tabItem` set amazon_available_quantity='{0}',amazon_reserved_quantity='{1}' where name = '{2}'""".format(item_available_qty,item_reserved_qty,item)
         try:
             frappe.db.sql(update_query)   
