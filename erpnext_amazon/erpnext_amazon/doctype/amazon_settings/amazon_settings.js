@@ -13,5 +13,10 @@ frappe.ui.form.on('Amazon Settings', {
         frm.add_custom_button(__("Amazon Log"), function(){
             frappe.set_route("List", "Amazon Log");
         })
+        frm.add_custom_button(__('Sync Amazon Age'), function() {
+            frappe.call({
+                method:"erpnext_amazon.client.sync_amazon_quantity",
+            })
+        }).addClass("btn-primary");
 	}
 });
