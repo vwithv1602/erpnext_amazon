@@ -18,13 +18,18 @@ def sync_amazon_quantity():
     frappe.msgprint(_("Queued for syncing. It may take a few minutes to an hour if this is your first sync."))
 
 def update_item_list_amazon_qty():
+
+    # item code -> asin list
     item_code_mapping_to_asin = get_item_code_mapping_to_asin()
+    # Asin -> FBA counts
     asin_to_amazon_qty_mapping = get_amazon_data()
 
     for item in item_code_mapping_to_asin:
         item_available_qty = 0
         item_reserved_qty = 0
         asin_list = item_code_mapping_to_asin[item].split(',')
+        if item == "Refurbished Lenovo ThinkPad L512-CORE I5 - 1ST GEN-4 GB-500 GB":
+            vwrite(asin_list)
         for asin in asin_list:
             if asin in asin_to_amazon_qty_mapping:
                 item_available_qty += asin_to_amazon_qty_mapping.get(asin)[0]
@@ -82,7 +87,6 @@ def get_amazon_data():
         if i > 5:
             #vwrite("Increment crossed 10")
             break
-    vwrite(result)
     return result
 
 	
