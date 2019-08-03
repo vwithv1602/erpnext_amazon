@@ -92,6 +92,7 @@ fixtures = ["Custom Field"]
 # ---------------
 scheduler_events = {
 	"all": [
+		"erpnext_amazon.api.sync_amazon"
 	]
 	
 }
