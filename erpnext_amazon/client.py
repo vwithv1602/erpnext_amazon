@@ -28,12 +28,13 @@ def update_item_list_amazon_qty():
         item_available_qty = 0
         item_reserved_qty = 0
         asin_list = item_code_mapping_to_asin[item].split(',')
-        if item == "Refurbished Lenovo ThinkPad L512-CORE I5 - 1ST GEN-4 GB-500 GB":
-            vwrite(asin_list)
         for asin in asin_list:
             if asin in asin_to_amazon_qty_mapping:
                 item_available_qty += asin_to_amazon_qty_mapping.get(asin)[0]
                 item_reserved_qty += asin_to_amazon_qty_mapping.get(asin)[1]
+            if item == "Refurbished Lenovo ThinkPad L512-CORE I5 - 1ST GEN-4 GB-500 GB":
+                vwrite(asin_to_amazon_qty_mapping.get(asin))
+                
         update_query = """update `tabItem` set amazon_available_quantity='{0}',amazon_reserved_quantity='{1}' where name = '{2}'""".format(item_available_qty,item_reserved_qty,item)
         try:
             frappe.db.sql(update_query)   
