@@ -15,7 +15,7 @@ frappe.ui.form.on('Amazon Settings', {
         })
         frm.add_custom_button(__('Sync Amazon Age'), function() {
             frappe.call({
-                method:"erpnext_amazon.client.sync_amazon_quantity",
+                method:"erpnext_amazon.client.update_item_list_amazon_qty",
             })
         }).addClass("btn-primary");
 	}
