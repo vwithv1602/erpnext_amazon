@@ -17,6 +17,7 @@ def sync_amazon_quantity():
     enqueue("erpnext_amazon.client.update_item_list_amazon_qty", queue='long')
     frappe.msgprint(_("Queued for syncing. It may take a few minutes to an hour if this is your first sync."))
 
+@frappe.whitelist()
 def update_item_list_amazon_qty():
 
     # item code -> asin list
