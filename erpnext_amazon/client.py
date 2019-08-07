@@ -22,8 +22,10 @@ def update_item_list_amazon_qty():
 
     # item code -> asin list
     item_code_mapping_to_asin = get_item_code_mapping_to_asin()
+    vwrite(item_code_mapping_to_asin)
     # Asin -> FBA counts
     asin_to_amazon_qty_mapping = get_amazon_data()
+    vwrite(asin_to_amazon_qty_mapping)
 
     for item in item_code_mapping_to_asin:
         item_available_qty = 0
