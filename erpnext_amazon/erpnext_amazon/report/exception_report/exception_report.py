@@ -21,14 +21,14 @@ class ItemExceptionReport(object):
 	def get_columns(self):
 		"""return columns bab on filters"""
 		columns = [
-			_("Amazon ASIN") + ":Data:120",
+			_("Amazon ASIN") + ":Data:100",
 			_("Amazon Title") + ":Data:120",
-			_("Item Code") + ":Data:340",
-			_("Amazon Available Qty") + ":Float:120",
-			_("Amazon Reserved Qty") + ":Float:120",
-			_("Packed") + ":Float:120",
-			_("RTS Qty") + ":Float:120",
-			_("Amazon ERP Quantity") + ":Float:120",
+			_("Item Code") + ":Data:380",
+			_("Amazon Available Qty") + ":Float:60",
+			_("Amazon Reserved Qty") + ":Float:60",
+			_("Packed") + ":Float:60",
+			_("RTS Qty") + ":Float:60",
+			_("Amazon ERP Quantity") + ":Float:60",
 			_("Not Listing Reason") + ":Data:120"
 		]
 		return columns
