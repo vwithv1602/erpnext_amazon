@@ -75,7 +75,6 @@ def get_amazon_canceled_order():
     """
     params = {'order_status':"Canceled"}
     amazon_canceled_orders = get_request('list_canceled_orders',params)
-    vwrite(amazon_canceled_orders)
     return amazon_canceled_orders.ListOrdersResult.Orders.Order
 
 # Get Sales order ID only for amazon orders.
@@ -106,7 +105,6 @@ def submit_amazon_canceled_orders():
     sales_order_id = None
     sales_order_doc = None
     get_amazon_canceled_array = get_amazon_canceled_order()
-    vwrite(len(get_amazon_canceled_array))
     if not len(get_amazon_canceled_array):
         return False
     for canceled_order in get_amazon_canceled_array:
@@ -117,7 +115,6 @@ def submit_amazon_canceled_orders():
                 sales_order_doc = frappe.get_doc('Sales Order',sales_order_id)
                 sales_order_doc.submit()
                 sales_order_doc.update_status('Closed')
-                vwrite(sales_order_id)
 
                 
 # End of functions for syncing the canceled order with ERP.
@@ -413,7 +410,12 @@ def get_item_code(amazon_item):
             # getting non-variant item - erpnext_amazon/issue#4
             filter_query = """ select item_code from `tabItem` where variant_of is null and (amazon_product_id='%s' or amazon_product_id like '%s' or amazon_product_id like '%s' or amazon_product_id like '%s')""" % (item_id,item_id+",%","%,"+item_id+",%","%,"+item_id)
             filter_result = frappe.db.sql(filter_query, as_dict=1)
-            item_code = filter_result[0].get("item_code")
+            if (len(filter_result) > 0):
+                item_code = filter_result[0].get("item_code")
+            else:
+                filter_query = """ select item_code from `tabItem` where (amazon_product_id='%s' or amazon_product_id like '%s' or amazon_product_id like '%s' or amazon_product_id like '%s')""" % (item_id,item_id+",%","%,"+item_id+",%","%,"+item_id)
+                filter_result = frappe.db.sql(filter_query, as_dict=1)
+                item_code = filter_result[0].get("item_code")
         else:
             if len(item_code_result):
                 item_code = item_code_result[0].get("item_code")
