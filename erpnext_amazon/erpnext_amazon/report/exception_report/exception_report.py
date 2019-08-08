@@ -85,6 +85,8 @@ class ItemExceptionReport(object):
 						reason = frappe.db.get_value('Item',{'name':item_code},'not_listing_reason')
 						if reason:
 							not_listing_reason.append(reason)
+						if "fizzics" in item_code.lower():
+							item_amazon_erp_quantity = int(get_balance_qty_from_sle(item_code,"Amazon - FZI"))
 						item_rts_quantity += (item_count_group_by_warehouse.get((item_code,warehouses.get("rts"))) or 0)
 						item_amazon_erp_quantity += (item_count_group_by_warehouse.get((item_code, warehouses.get("amazon"))) or 0)
 
