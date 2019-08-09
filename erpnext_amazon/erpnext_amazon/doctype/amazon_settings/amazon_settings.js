@@ -17,6 +17,6 @@ frappe.ui.form.on('Amazon Settings', {
             frappe.call({
                 method:"erpnext_amazon.client.sync_amazon_quantity",
             })
-        }).addClass("btn-primary");
+        });
 	}
 });
