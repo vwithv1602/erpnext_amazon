@@ -29,6 +29,7 @@ def update_item_list_amazon_qty():
         item_available_qty = 0
         item_reserved_qty = 0
         asin_list = item_code_mapping_to_asin[item].split(',')
+        asin_list = [asin.strip() for asin in asin_list]
         for asin in asin_list:
             if asin in asin_to_amazon_qty_mapping:
                 item_available_qty += asin_to_amazon_qty_mapping.get(asin)[0]
@@ -96,4 +97,5 @@ def get_amazon_data():
             # "reference_name": self.name
         }
         enqueue(method=frappe.sendmail, queue='short', timeout=300, async=True, **email_args)
+    vwrite(result)
     return result
