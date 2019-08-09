@@ -55,38 +55,45 @@ def get_amazon_data():
     i = 0
     amazon_prod_ids = []
     result = {}
-    while True:
-        i = i+1
-        params = {'ReportRequestIdList':[report_result.RequestReportResult.ReportRequestInfo.ReportRequestId]}
-        submission_list = get_request('get_report_request_list',params)
-        info =  submission_list.GetReportRequestListResult.ReportRequestInfo[0]
-        id = info.ReportRequestId
-        status = info.ReportProcessingStatus
-        #vwrite('Submission Id: {}. Current status: {}'.format(id, status))
-        
-        if (status in ('_SUBMITTED_', '_IN_PROGRESS_', '_UNCONFIRMED_')):
-            #vwrite('Sleeping for 5s and check again....')
-            time.sleep(5)
-        elif (status == '_DONE_'):
-            generated_report_id = info.GeneratedReportId
-            reportResult = get_request('get_report',{'ReportId':generated_report_id})
-            res_array = re.split(r'\n+', reportResult)
-            i = 0
-            for line in res_array[1:]:
-                # if i > 0 and i < len(res_array)-1:
-                res_line = re.split(r'\t+', line)
-                if (res_line[3] == 'Unknown') or (res_line[4] == 'Unknown'):
-                    continue
-                result[res_line[2]] = (int(res_line[9]),int(res_line[11]))
+    try:
+        while True:
             i = i+1
-            break
-        else:
-            #vwrite("Submission processing error. Quit.")
-            break
-        if i > 5:
-            #vwrite("Increment crossed 10")
-            break
+            params = {'ReportRequestIdList':[report_result.RequestReportResult.ReportRequestInfo.ReportRequestId]}
+            submission_list = get_request('get_report_request_list',params)
+            info =  submission_list.GetReportRequestListResult.ReportRequestInfo[0]
+            id = info.ReportRequestId
+            status = info.ReportProcessingStatus
+            #vwrite('Submission Id: {}. Current status: {}'.format(id, status))
+            
+            if (status in ('_SUBMITTED_', '_IN_PROGRESS_', '_UNCONFIRMED_')):
+                #vwrite('Sleeping for 5s and check again....')
+                time.sleep(5)
+            elif (status == '_DONE_'):
+                generated_report_id = info.GeneratedReportId
+                reportResult = get_request('get_report',{'ReportId':generated_report_id})
+                res_array = re.split(r'\n+', reportResult)
+                i = 0
+                for line in res_array[1:]:
+                    # if i > 0 and i < len(res_array)-1:
+                    res_line = re.split(r'\t+', line)
+                    if (res_line[3] == 'Unknown') or (res_line[4] == 'Unknown'):
+                        continue
+                    result[res_line[2]] = (int(res_line[9]),int(res_line[11]))
+                i = i+1
+                break
+            else:
+                #vwrite("Submission processing error. Quit.")
+                break
+            if i > 5:
+                #vwrite("Increment crossed 10")
+                break
+    except:
+        email_args = {
+            "recipients": ["it@usedyetnew.com","visheshhanda@usedyetnew.com"],
+            "message": _("Amazon Quantity Syncing failed."),
+            "subject": 'Amazon Quantity Sync Failed',
+            # "reference_doctype": self.doctype,
+            # "reference_name": self.name
+        }
+        enqueue(method=frappe.sendmail, queue='short', timeout=300, async=True, **email_args)
     return result
-
-	
-	
