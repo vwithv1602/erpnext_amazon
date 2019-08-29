@@ -97,5 +97,5 @@ def get_amazon_data():
             # "reference_name": self.name
         }
         enqueue(method=frappe.sendmail, queue='short', timeout=300, async=True, **email_args)
-    vwrite(result)
+
     return result
