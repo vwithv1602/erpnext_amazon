@@ -123,6 +123,7 @@ def submit_amazon_canceled_orders():
 def sync_amazon_orders():
     frappe.local.form_dict.count_dict["orders"] = 0
     get_amazon_orders_array = get_amazon_orders()
+    vwrite(get_amazon_orders_array)
     if not len((get_amazon_orders_array)):
         return False
     for amazon_order in get_amazon_orders_array:
