@@ -123,11 +123,12 @@ def submit_amazon_canceled_orders():
 def sync_amazon_orders():
     frappe.local.form_dict.count_dict["orders"] = 0
     get_amazon_orders_array = get_amazon_orders()
-    vwrite(get_amazon_orders_array)
     if not len((get_amazon_orders_array)):
         return False
     for amazon_order in get_amazon_orders_array:
         amazon_order_with_item_details = []
+        if amazon_order.AmazonOrderId == '404-7569595-4285900':
+            vwrite(amazon_order)
         # call api for items by sending amazon_order.AmazonOrderId
         params = {'AmazonOrderId':amazon_order.AmazonOrderId}
         if frappe.get_list('Sales Order', filters = {'amazon_order_id':params.get('AmazonOrderId')},fields=['name']):
